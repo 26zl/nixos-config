@@ -1,0 +1,75 @@
+# Starship — Nord theme
+format = """
+[╭─](bold #88c0d0)\
+$os\
+$username\
+$directory\
+$git_branch\
+$git_status\
+$python\
+$nodejs\
+$rust\
+$golang\
+$docker_context\
+$cmd_duration\
+$line_break\
+[╰─](bold #88c0d0)\
+$character"""
+
+[os]
+disabled = false
+format = '[$symbol ](#88c0d0 bold)'
+
+[os.symbols]
+Linux   = ""
+
+[username]
+show_always = true
+format      = '[$user](bold #d8dee9)[@](#81a1c1)[$hostname](bold #d8dee9) '
+
+[directory]
+format            = '[ $path](bold #8fbcbb) '
+truncation_length = 3
+truncation_symbol = "…/"
+
+[git_branch]
+format = '[ $branch](#88c0d0) '
+symbol = " "
+
+[git_status]
+format    = '[$all_status$ahead_behind](#bf616a) '
+ahead     = "⇡${count}"
+behind    = "⇣${count}"
+diverged  = "⇕⇡${ahead_count}⇣${behind_count}"
+modified  = "!${count}"
+staged    = "+${count}"
+untracked = "?${count}"
+deleted   = "✘${count}"
+
+[python]
+format = '[${symbol}${pyenv_prefix}(${version} )(\($virtualenv\) )](#ebcb8b) '
+symbol = " "
+
+[nodejs]
+format = '[$symbol($version )](#a3be8c) '
+symbol = " "
+
+[rust]
+format = '[$symbol($version )](#bf616a) '
+symbol = " "
+
+[golang]
+format = '[$symbol($version )](#81a1c1) '
+symbol = " "
+
+[docker_context]
+format = '[$symbol$context](#5e81ac) '
+symbol = " "
+
+[cmd_duration]
+min_time = 1000
+format   = '[ $duration](#4c566a) '
+
+[character]
+success_symbol = '[❯](bold #a3be8c)'
+error_symbol   = '[❯](bold #bf616a)'

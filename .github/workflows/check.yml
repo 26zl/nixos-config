@@ -1,0 +1,29 @@
+name: Validate flake
+
+on:
+  push:
+    branches: ["*"]
+  pull_request:
+    branches: ["*"]
+
+permissions:
+  contents: read
+
+jobs:
+  eval:
+    name: Evaluate NixOS configuration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@630ae543ea3a38a9a4166f03376c02c50f408342 # v31.11.0
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      # Evaluation catches renamed options/packages and syntax errors without
+      # building or downloading the closure.
+      - name: Evaluate system closure
+        run: nix eval --raw .#nixosConfigurations.nixos.config.system.build.toplevel.drvPath

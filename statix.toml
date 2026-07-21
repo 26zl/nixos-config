@@ -1,0 +1,4 @@
+# These lints are too noisy for idiomatic NixOS:
+#   repeated_keys  — foo.bar.x = ... is written everywhere
+#   empty_pattern  — { ... }: is the conventional module signature
+disabled = ["repeated_keys", "empty_pattern"]

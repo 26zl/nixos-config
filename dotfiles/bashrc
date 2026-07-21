@@ -1,0 +1,42 @@
+# ~/.bashrc — interactive shell setup. NixOS provides system defaults; this adds
+# aliases and tool hooks. Everything is guarded so a missing tool stays silent.
+
+# eza — modern ls
+alias ls='eza --icons --group-directories-first'
+alias ll='eza --icons --group-directories-first -lh --git'
+alias la='eza --icons --group-directories-first -lha --git'
+alias tree='eza --icons --tree'
+
+# bat — syntax-highlighted cat (aliases affect interactive use only)
+alias cat='bat --pager=never'
+export MANPAGER="sh -c 'col -bx | bat -l man -p'"
+
+# git
+alias gs='git status'
+alias gd='git diff'
+alias lg='lazygit'
+export GIT_PAGER='delta'
+
+# color for the classics
+alias grep='grep --color=auto'
+alias diff='diff --color=auto'
+
+# yazi — `ya` drops the shell into the directory you quit yazi in
+ya() {
+  local tmp cwd
+  tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
+  yazi "$@" --cwd-file="$tmp"
+  if cwd="$(command cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+    builtin cd -- "$cwd" || return
+  fi
+  rm -f -- "$tmp"
+}
+
+# tool hooks
+command -v direnv >/dev/null && eval "$(direnv hook bash)"
+command -v starship >/dev/null && eval "$(starship init bash)"
+command -v zoxide >/dev/null && eval "$(zoxide init bash)"
+command -v fzf >/dev/null && eval "$(fzf --bash)"
+
+# self-updating Claude Code lives here
+export PATH="$HOME/.local/bin:$PATH"

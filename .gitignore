@@ -1,0 +1,20 @@
+# Never commit secrets / credentials
+*.key
+*.pem
+*.age
+*.gpg
+id_ed25519*
+id_rsa*
+.git-credentials
+hosts.yml            # gh oauth token lives here
+secrets/
+.env
+.env.*
+
+# Nix build artifacts
+result
+result-*
+
+# direnv + generated pre-commit config
+.direnv/
+.pre-commit-config.yaml

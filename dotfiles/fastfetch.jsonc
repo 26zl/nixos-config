@@ -1,0 +1,24 @@
+// fastfetch — Nord theme. Copy to ~/.config/fastfetch/config.jsonc
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "logo": { "type": "auto", "padding": { "top": 1, "left": 2 } },
+  "display": { "separator": "  " },
+  "modules": [
+    { "type": "title", "keyColor": "38;2;136;192;208" },
+    { "type": "separator", "string": "─", "outputColor": "38;2;76;86;106" },
+    { "type": "os", "key": "  OS", "keyColor": "38;2;136;192;208" },
+    { "type": "kernel", "key": "  Kernel", "keyColor": "38;2;136;192;208" },
+    { "type": "uptime", "key": "  Uptime", "keyColor": "38;2;136;192;208" },
+    { "type": "packages", "key": "  Packages", "keyColor": "38;2;136;192;208" },
+    { "type": "de", "key": "  DE", "keyColor": "38;2;136;192;208" },
+    { "type": "terminal", "key": "  Terminal", "keyColor": "38;2;136;192;208" },
+    { "type": "shell", "key": "  Shell", "keyColor": "38;2;136;192;208" },
+    { "type": "break" },
+    { "type": "cpu", "key": "  CPU", "keyColor": "38;2;163;190;140" },
+    { "type": "gpu", "key": "  GPU", "keyColor": "38;2;163;190;140" },
+    { "type": "memory", "key": "  Memory", "keyColor": "38;2;163;190;140" },
+    { "type": "disk", "key": "  Disk", "keyColor": "38;2;163;190;140" },
+    { "type": "break" },
+    { "type": "colors", "paddingLeft": 2, "symbol": "circle" }
+  ]
+}

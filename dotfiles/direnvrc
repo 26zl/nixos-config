@@ -1,0 +1,2 @@
+# nix-direnv: fast, cached `use flake` / `use nix` shells per project.
+source /run/current-system/sw/share/nix-direnv/direnvrc
