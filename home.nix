@@ -48,6 +48,8 @@ in
       klaunchrc.BusyCursorSettings.Bouncing = false;
       ksplashrc.KSplash.Engine = "none";
       ksplashrc.KSplash.Theme = "None";
+      # Start each login with a clean desktop instead of reopening last session.
+      ksmserverrc.General.loginMode = "emptySession";
       # Lock screen (also shown when resuming from sleep).
       kscreenlockerrc = {
         Greeter.WallpaperPlugin = "org.kde.image";
