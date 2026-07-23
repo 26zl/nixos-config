@@ -39,6 +39,8 @@ in
       # (a big background CPU/disk saver; re-enable if you want file-content search).
       kdeglobals.KDE.AnimationDurationFactor = 0.5;
       baloofilerc."Basic Settings"."Indexing-Enabled" = false;
+      # Disable the KWin zoom/magnifier effect (too easy to trigger by accident).
+      kwinrc.Plugins.zoomEnabled = false;
       # Lock screen (also shown when resuming from sleep).
       kscreenlockerrc = {
         Greeter.WallpaperPlugin = "org.kde.image";
