@@ -265,6 +265,7 @@ in
     p7zip
 
     # Editors
+    neovim # latest (0.12.x); user config is cloned from the 26zl/nvim repo
     vscode-fhs # FHS build so extensions that ship binaries work
 
     # Everyday apps
