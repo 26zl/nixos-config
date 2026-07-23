@@ -11,12 +11,12 @@ dual-boot with Windows), hardened for daily use and designed to be forked.
   & cursor; kitty, starship and fastfetch all themed to match
 - **Terminal:** kitty running fish (login shell stays bash for KDE stability), starship
   prompt, a modern CLI (ripgrep, fd, bat, eza, fzf, zoxide, yazi, delta, fastfetch)
-- **Dev:** VS Code + Neovim, curated language toolchains (Python / Node / Rust / Go /
+- **Dev:** VS Code, curated language toolchains (Python / Node / Rust / Go /
   Java / C++) with language servers, `direnv` + `nix-direnv` for per-project shells,
   `gh` + GitHub Desktop + `lazygit`, DBeaver, Bruno, Ollama (local LLM), android-tools
 - **Containers & VMs:** Docker, Podman, libvirt + virt-manager
 - **System engineering:** kubectl/k9s/helm/kubectx, OpenTofu, lazydocker/dive, sops+age,
-  Ansible; a Neovim config (Lua) with LSP for bash/yaml/docker/ansible/terraform/nix
+  Ansible
 - **Security tooling:** Wireshark, nmap, tcpdump, Burp Suite, Lynis, ClamAV, auditd
   (kernel audit daemon; no custom rules), KeePassXC; Mullvad + Tailscale + WireGuard
 - **Apps:** Chrome, Discord, VLC/mpv, LibreOffice, Thunderbird, EasyEffects
@@ -27,7 +27,7 @@ dual-boot with Windows), hardened for daily use and designed to be forked.
   Wi-Fi MAC privacy, encrypted DNS (opportunistic DNS-over-TLS with Quad9 fallback),
   Mullvad VPN, AppArmor, firewall — a _desktop-safe_ subset tuned to NOT break KDE,
   Docker, VMs or dev tooling
-- **Declarative dotfiles + KDE:** Home Manager manages the shell/terminal/Neovim dotfiles,
+- **Declarative dotfiles + KDE:** Home Manager manages the shell/terminal dotfiles,
   and plasma-manager applies the Nord global theme automatically (no System Settings clicks)
 - **Dual-boot friendly:** systemd-boot (auto-detects Windows), local-time RTC
 
@@ -177,27 +177,21 @@ rebuild, and disable Secure Boot in the firmware. Full runbook also lives in
 ## Dotfiles on other systems
 
 On this NixOS host, Home Manager applies every dotfile and the **Nord** KDE look
-declaratively. On another Linux distribution, copy the portable shell, terminal
-and Neovim files:
+declaratively. On another Linux distribution, copy the portable shell and terminal
+files:
 
 ```sh
 cp dotfiles/bashrc ~/.bashrc
 cp dotfiles/starship.toml ~/.config/starship.toml
-mkdir -p ~/.config/kitty ~/.config/fish ~/.config/fastfetch ~/.config/nvim
+mkdir -p ~/.config/kitty ~/.config/fish ~/.config/fastfetch
 cp dotfiles/kitty.conf ~/.config/kitty/kitty.conf
 cp dotfiles/config.fish ~/.config/fish/config.fish
 cp dotfiles/fastfetch.jsonc ~/.config/fastfetch/config.jsonc
-cp dotfiles/nvim/init.lua ~/.config/nvim/init.lua
 ```
 
 Install and configure `nix-direnv` separately outside NixOS; the committed
-`direnvrc` uses a NixOS-only path. On Windows, `init.lua` and `starship.toml` are
+`direnvrc` uses a NixOS-only path. On Windows, `starship.toml` is
 portable, while the shell and Kitty files target Unix.
-
-The Neovim config installs plugins through lazy.nvim on first launch. The NixOS
-system is flake-pinned, but the plugin layer is not reproducible until a
-`lazy-lock.json` is committed. On NixOS the language servers come from the
-system; elsewhere Mason installs them.
 
 ## Post-install notes
 

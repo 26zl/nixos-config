@@ -15,7 +15,6 @@ in
     ".config/kitty/kitty.conf".source = ./dotfiles/kitty.conf;
     ".config/fish/config.fish".source = ./dotfiles/config.fish;
     ".config/fastfetch/config.jsonc".source = ./dotfiles/fastfetch.jsonc;
-    ".config/nvim/init.lua".source = ./dotfiles/nvim/init.lua;
   };
 
   # KDE Plasma: dark Nord + NixOS "snowflake" blue accent + NixOS wallpaper,

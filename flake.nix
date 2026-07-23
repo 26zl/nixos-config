@@ -91,8 +91,10 @@
       # `nix fmt` formats every file (nix/lua/shell/md/yaml/json).
       formatter.${system} = treefmtEval.config.build.wrapper;
       packages.${system}.sbctl = pkgs.sbctl;
-      checks.${system}.formatting = treefmtEval.config.build.check self;
-      checks.${system}.pre-commit = preCommit;
+      checks.${system} = {
+        formatting = treefmtEval.config.build.check self;
+        pre-commit = preCommit;
+      };
 
       # `nix develop` (or direnv) installs the pre-commit hooks.
       devShells.${system}.default = pkgs.mkShell {

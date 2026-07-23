@@ -266,7 +266,6 @@ in
 
     # Editors
     vscode-fhs # FHS build so extensions that ship binaries work
-    neovim
 
     # Everyday apps
     google-chrome
@@ -372,7 +371,6 @@ in
     ansible-language-server
     terraform-ls
     marksman
-    # Formatters for the Neovim conform.nvim config
     stylua
     black
     isort
