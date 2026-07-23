@@ -39,8 +39,15 @@ in
       # (a big background CPU/disk saver; re-enable if you want file-content search).
       kdeglobals.KDE.AnimationDurationFactor = 0.5;
       baloofilerc."Basic Settings"."Indexing-Enabled" = false;
-      # Disable the KWin zoom/magnifier effect (too easy to trigger by accident).
+      # Disable KDE annoyances: zoom/magnifier + shake-to-find cursor (both easy
+      # to trigger by accident), the Meta-alone launcher popup, the app-launch
+      # bounce cursor, and the boot splash screen.
       kwinrc.Plugins.zoomEnabled = false;
+      kwinrc.Plugins.shakecursorEnabled = false;
+      kwinrc.ModifierOnlyShortcuts.Meta = "";
+      klaunchrc.BusyCursorSettings.Bouncing = false;
+      ksplashrc.KSplash.Engine = "none";
+      ksplashrc.KSplash.Theme = "None";
       # Lock screen (also shown when resuming from sleep).
       kscreenlockerrc = {
         Greeter.WallpaperPlugin = "org.kde.image";
