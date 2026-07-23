@@ -28,7 +28,7 @@
       url = "github:cachix/git-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # Secure Boot (opt-in; activated by importing ./secureboot.nix).
+    # Secure Boot is enabled by the secureboot.nix import in configuration.nix.
     lanzaboote = {
       url = "github:nix-community/lanzaboote/v1.1.0";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -90,7 +90,9 @@
 
       # `nix fmt` formats every file (nix/lua/shell/md/yaml/json).
       formatter.${system} = treefmtEval.config.build.wrapper;
+      packages.${system}.sbctl = pkgs.sbctl;
       checks.${system}.formatting = treefmtEval.config.build.check self;
+      checks.${system}.pre-commit = preCommit;
 
       # `nix develop` (or direnv) installs the pre-commit hooks.
       devShells.${system}.default = pkgs.mkShell {

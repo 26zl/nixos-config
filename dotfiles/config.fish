@@ -28,5 +28,6 @@ function ya
     rm -f -- $tmp
 end
 
+command -v direnv >/dev/null; and direnv hook fish | source
 command -v zoxide >/dev/null; and zoxide init fish | source
 command -v starship >/dev/null; and starship init fish | source

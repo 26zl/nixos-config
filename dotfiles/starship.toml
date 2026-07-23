@@ -3,6 +3,7 @@ format = """
 [╭─](bold #88c0d0)\
 $os\
 $username\
+$hostname\
 $directory\
 $git_branch\
 $git_status\
@@ -25,7 +26,11 @@ Linux   = ""
 
 [username]
 show_always = true
-format      = '[$user](bold #d8dee9)[@](#81a1c1)[$hostname](bold #d8dee9) '
+format      = '[$user](bold #d8dee9)'
+
+[hostname]
+ssh_only = false
+format   = '[@](#81a1c1)[$hostname](bold #d8dee9) '
 
 [directory]
 format            = '[ $path](bold #8fbcbb) '

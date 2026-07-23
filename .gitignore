@@ -6,7 +6,8 @@
 id_ed25519*
 id_rsa*
 .git-credentials
-hosts.yml            # gh oauth token lives here
+# gh OAuth token lives here
+hosts.yml
 secrets/
 .env
 .env.*
@@ -14,7 +15,21 @@ secrets/
 # Nix build artifacts
 result
 result-*
+repl-result-*
+# VM images from nixos-rebuild build-vm / flake checks
+*.qcow2
 
 # direnv + generated pre-commit config
 .direnv/
 .pre-commit-config.yaml
+
+.vscode/
+.idea/
+
+# OS / editor cruft
+.DS_Store
+*.swp
+*~
+
+# Claude Code local settings
+.claude/settings.local.json

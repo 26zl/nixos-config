@@ -2,8 +2,8 @@
 # NixOS hardening framework (daily/workstation profile) and ryan4yin's config; see
 # README credits. Tuned to not break KDE, Docker, libvirt or dev tooling.
 #
-# Deliberately excluded as too invasive for this machine: impermanence, Secure
-# Boot/TPM enrollment, hardened malloc, auditd rule sets, SMT/USB lockdown.
+# Deliberately excluded as too invasive for this machine: impermanence,
+# TPM-backed measured boot, hardened malloc, auditd rule sets, SMT/USB lockdown.
 
 {
   config,
@@ -13,8 +13,7 @@
 }:
 
 {
-  # Block kexec and runtime kernel-image tampering (also blocks hibernation,
-  # which this swapless machine cannot use anyway).
+  # Block kexec and runtime kernel-image tampering; there is no disk-backed swap.
   security.protectKernelImage = true;
 
   # Heap/allocator hardening.
@@ -83,6 +82,7 @@
 
     # IPv6 privacy (temporary) addresses.
     "net.ipv6.conf.all.use_tempaddr" = 2;
+    "net.ipv6.conf.default.use_tempaddr" = 2;
 
     # Prefer compressed zram swap aggressively over evicting file cache.
     "vm.swappiness" = 150;

@@ -148,7 +148,7 @@ in
   # Security
   security.sudo.execWheelOnly = true;
   security.apparmor.enable = true;
-  security.auditd.enable = true; # kernel audit logging (the Sysmon analog); no custom rules
+  security.auditd.enable = true; # kernel audit daemon; no custom detection rules
   services.clamav.updater.enable = true; # keep on-demand scanner definitions current: clamscan / clamdscan
 
   # Mesh + on-demand VPN alongside Mullvad.

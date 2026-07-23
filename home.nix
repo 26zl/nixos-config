@@ -45,10 +45,6 @@ in
         Greeter.WallpaperPlugin = "org.kde.image";
         "Greeter/Wallpaper/org.kde.image/General".Image = "${wp}";
       };
-      # Pin the desktop wallpaper on the folder-view containment so a rebuild
-      # never resets it to the Plasma default.
-      "plasma-org.kde.plasma.desktop-appletsrc"."Containments/1/Wallpaper/org.kde.image/General".Image =
-        "file://${wp}";
     };
   };
 }

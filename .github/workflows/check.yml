@@ -2,9 +2,9 @@ name: Validate flake
 
 on:
   push:
-    branches: ["*"]
+    branches: ["**"]
   pull_request:
-    branches: ["*"]
+    branches: ["**"]
 
 permissions:
   contents: read
@@ -16,12 +16,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - name: Run shell regression tests
+        run: bash tests/audit-regressions.sh
 
       - name: Install Nix
         uses: cachix/install-nix-action@630ae543ea3a38a9a4166f03376c02c50f408342 # v31.11.0
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
+
+      - name: Run flake checks
+        run: nix flake check --print-build-logs
 
       # Evaluation catches renamed options/packages and syntax errors without
       # building or downloading the closure.

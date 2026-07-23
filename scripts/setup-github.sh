@@ -17,7 +17,7 @@ gh auth setup-git
 # Derive the global git identity from the GitHub account; fall back to the
 # privacy-preserving noreply address when the account email is hidden.
 login="$(gh api user --jq .login)"
-name="$(gh api user --jq '.name // .login')"
+name="$(gh api user --jq .login)"
 id="$(gh api user --jq .id)"
 email="$(gh api user --jq '.email // empty')"
 [ -z "$email" ] && email="${id}+${login}@users.noreply.github.com"
