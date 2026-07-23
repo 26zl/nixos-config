@@ -69,7 +69,7 @@ grep -Fq 'ssh_only = false' "$repo/dotfiles/starship.toml" ||
 if grep -Fq '"Containments/1/Wallpaper' "$repo/home.nix"; then
   fail "Home Manager writes a fragile Plasma containment ID"
 fi
-grep -Fq '"net.ipv6.conf.default.use_tempaddr" = 2;' "$repo/hardening.nix" ||
+grep -Fq '"net.ipv6.conf.default.use_tempaddr" = lib.mkForce 2;' "$repo/hardening.nix" ||
   fail "new interfaces do not inherit IPv6 privacy addressing"
 grep -Fq 'sudo bash scripts/bootstrap.sh' "$repo/README.md" ||
   fail "the quick start bypasses the Secure Boot bootstrap"

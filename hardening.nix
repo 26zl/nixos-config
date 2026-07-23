@@ -82,7 +82,9 @@
 
     # IPv6 privacy (temporary) addresses.
     "net.ipv6.conf.all.use_tempaddr" = 2;
-    "net.ipv6.conf.default.use_tempaddr" = 2;
+    # nixpkgs' network-interfaces module also defines the `default` key, so force
+    # ours to win instead of colliding with it.
+    "net.ipv6.conf.default.use_tempaddr" = lib.mkForce 2;
 
     # Prefer compressed zram swap aggressively over evicting file cache.
     "vm.swappiness" = 150;
