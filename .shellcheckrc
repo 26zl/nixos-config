@@ -1,0 +1,11 @@
+# Config files sourced without a shebang (.envrc, dotfiles/direnvrc,
+# dotfiles/bashrc) are bash — tell ShellCheck so it does not raise SC2148.
+shell=bash
+
+# tests/audit-regressions.sh greps flake.nix/scripts for literal ${...} and
+# $REPO strings inside single quotes; the missing expansion is intentional.
+disable=SC2016
+
+# Sourced runtime files (e.g. nix-direnv's direnvrc) are not resolvable while
+# the check runs in the sandbox.
+disable=SC1091
