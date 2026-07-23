@@ -28,7 +28,7 @@ grep -Fq 'bash tests/audit-regressions.sh' "$repo/.github/workflows/check.yml" |
   fail "CI does not run the regression tests"
 grep -Fq 'nix flake check --print-build-logs' "$repo/.github/workflows/check.yml" ||
   fail "CI does not run flake checks"
-expected_precommit="checks.\${system}.pre-commit = preCommit;"
+expected_precommit='pre-commit = preCommit;'
 grep -Fq "$expected_precommit" "$repo/flake.nix" ||
   fail "the pre-commit checks are not exposed through nix flake check"
 grep -Fq '9991e0b2903da4c8f6122b5c3186448b927a5da4deef1fe45271c3793f4ee29c' \
@@ -38,19 +38,19 @@ grep -Fq 'fetch-depth: 0' "$repo/.github/workflows/secret-scan.yml" ||
   fail "the secret scan does not fetch full history"
 grep -Fq './gitleaks git .' "$repo/.github/workflows/secret-scan.yml" ||
   fail "Gitleaks does not scan Git history"
-expected_sbctl_package="packages.\${system}.sbctl = pkgs.sbctl;"
+expected_sbctl_package='packages.${system}.sbctl = pkgs.sbctl;'
 grep -Fq "$expected_sbctl_package" "$repo/flake.nix" ||
   fail "sbctl is not exposed from the locked flake"
-expected_sbctl_shell="shell \"\${REPO}#sbctl\""
+expected_sbctl_shell='shell "${REPO}#sbctl"'
 grep -Fq "$expected_sbctl_shell" "$repo/scripts/bootstrap.sh" ||
   fail "bootstrap does not use the locked sbctl package"
 if grep -Fq '>hardware-configuration.nix' "$repo/scripts/bootstrap.sh"; then
   fail "bootstrap truncates the active hardware configuration during generation"
 fi
-expected_hardware_tmp="mktemp \"\$REPO/hardware-configuration.nix.XXXXXX\""
+expected_hardware_tmp='mktemp "$REPO/hardware-configuration.nix.XXXXXX"'
 grep -Fq "$expected_hardware_tmp" "$repo/scripts/bootstrap.sh" ||
   fail "bootstrap does not stage generated hardware configuration"
-expected_hardware_move="mv -- \"\$hardware_tmp\" \"\$REPO/hardware-configuration.nix\""
+expected_hardware_move='mv -- "$hardware_tmp" "$REPO/hardware-configuration.nix"'
 grep -Fq "$expected_hardware_move" \
   "$repo/scripts/bootstrap.sh" ||
   fail "bootstrap does not replace hardware configuration atomically"
@@ -88,20 +88,20 @@ fi
 grep -Fq 'does not back up' "$repo/README.md" ||
   fail "the documentation does not disclose the backup boundary"
 
-expected_filter="--exclude-from=\"\$REPO/.gitignore\""
+expected_filter='--exclude-from="$REPO/.gitignore"'
 grep -Fq -- "$expected_filter" "$repo/scripts/apply.sh" ||
   fail "apply.sh does not exclude ignored files from the deployment mirror"
-expected_realpath="realpath \"\${BASH_SOURCE[0]}\""
+expected_realpath='realpath "${BASH_SOURCE[0]}"'
 grep -Fq "$expected_realpath" "$repo/scripts/apply.sh" ||
   fail "apply.sh does not resolve symlinked launch paths"
 
 guard_line="$(grep -n 'EUID -ne 0' "$repo/scripts/apply.sh" | head -n 1 | cut -d: -f1 || true)"
 sync_line="$(grep -n '^rsync ' "$repo/scripts/apply.sh" | head -n 1 | cut -d: -f1)"
-if [[ -z "$guard_line" || "$guard_line" -ge "$sync_line" ]]; then
+if [[ -z $guard_line || $guard_line -ge $sync_line ]]; then
   fail "apply.sh does not reject non-root execution before mirroring"
 fi
 trap_line="$(grep -n 'trap finish_deploy EXIT' "$repo/scripts/apply.sh" | head -n 1 | cut -d: -f1 || true)"
-if [[ -z "$trap_line" || "$trap_line" -ge "$sync_line" ]]; then
+if [[ -z $trap_line || $trap_line -ge $sync_line ]]; then
   fail "apply.sh does not establish recovery before mirroring"
 fi
 grep -Fq "trap 'exit 130' INT" "$repo/scripts/apply.sh" ||
@@ -136,7 +136,7 @@ cp "$repo/.gitignore" "$rollback_source/.gitignore"
 touch "$rollback_source/flake.nix" "$rollback_source/configuration.nix" "$rollback_source/managed.nix"
 touch "$rollback_destination/pre-existing.nix"
 
-destination_rewrite="s|^DST=\"/etc/nixos\"\$|DST=\"\$TEST_DST\"|"
+destination_rewrite='s|^DST="/etc/nixos"$|DST="$TEST_DST"|'
 sed \
   -e '/EUID -ne 0/s/.*/if false; then/' \
   -e "$destination_rewrite" \
@@ -157,7 +157,7 @@ fi
 [[ ! -d "$rollback_destination/.git" ]] ||
   fail "rollback did not restore the original Git state"
 
-mock_parent_signal="kill -TERM \"\$PPID\""
+mock_parent_signal='kill -TERM "$PPID"'
 printf '%s\n' '#!/usr/bin/env bash' "$mock_parent_signal" 'sleep 0.1' 'exit 143' \
   >"$mock_bin/nixos-rebuild"
 chmod +x "$mock_bin/nixos-rebuild"

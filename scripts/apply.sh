@@ -14,7 +14,7 @@ fi
 script_path="$(realpath "${BASH_SOURCE[0]}")"
 REPO="$(cd "$(dirname "$script_path")/.." && pwd)"
 DST="/etc/nixos"
-if [[ "$REPO" == "/" || "$REPO" == "$DST" || -L "$DST" || ! -f "$REPO/flake.nix" ||
+if [[ $REPO == "/" || $REPO == "$DST" || -L $DST || ! -f "$REPO/flake.nix" ||
   ! -f "$REPO/configuration.nix" || ! -f "$REPO/.gitignore" ]]; then
   echo "Refusing to deploy from invalid source: $REPO" >&2
   exit 1
@@ -29,7 +29,7 @@ backup="$(mktemp -d /var/tmp/nixos-config-backup.XXXXXX)"
 destination_existed=false
 deploy_mutated=false
 deploy_succeeded=false
-if [[ -d "$DST" ]]; then
+if [[ -d $DST ]]; then
   destination_existed=true
 fi
 
@@ -37,7 +37,7 @@ cleanup_backup() {
   rm -rf -- "$backup"
 }
 restore_destination() {
-  if [[ "$destination_existed" == true ]]; then
+  if [[ $destination_existed == true ]]; then
     mkdir -p "$DST"
     rsync -a --delete "$backup/" "$DST/"
   else
@@ -48,13 +48,13 @@ finish_deploy() {
   local exit_code=$?
   local recovery_ok=true
   trap - EXIT HUP INT TERM
-  if [[ "$deploy_mutated" == true && "$deploy_succeeded" != true ]]; then
+  if [[ $deploy_mutated == true && $deploy_succeeded != true ]]; then
     echo "==> Deploy failed — restoring the previous $DST snapshot" >&2
     if ! restore_destination; then
       recovery_ok=false
     fi
   fi
-  if [[ "$recovery_ok" == true ]]; then
+  if [[ $recovery_ok == true ]]; then
     cleanup_backup
   else
     echo "Recovery failed; the snapshot remains at $backup" >&2
@@ -66,7 +66,7 @@ trap 'exit 129' HUP
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-if [[ "$destination_existed" == true ]]; then
+if [[ $destination_existed == true ]]; then
   rsync -a "$DST/" "$backup/"
 fi
 

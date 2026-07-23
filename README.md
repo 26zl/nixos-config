@@ -72,11 +72,11 @@ signing keys from the locked flake, and switches to the new system.
 
 Before building, change the few values that are specific to a user/host:
 
-| Where               | Change                                                                           |
-| ------------------- | -------------------------------------------------------------------------------- |
-| `home.nix`          | `home.username` / `home.homeDirectory` → your user                                |
-| `configuration.nix` | User, `trusted-users`, hostname, source path, locale, Intel VAAPI and hardware     |
-| `flake.nix`         | Home Manager user and the Intel `nixos-hardware` module                           |
+| Where               | Change                                                                         |
+| ------------------- | ------------------------------------------------------------------------------ |
+| `home.nix`          | `home.username` / `home.homeDirectory` → your user                             |
+| `configuration.nix` | User, `trusted-users`, hostname, source path, locale, Intel VAAPI and hardware |
+| `flake.nix`         | Home Manager user and the Intel `nixos-hardware` module                        |
 
 The defaults remain specific to this ThinkPad and Intel GPU. Review the hardware
 module, graphics driver, disk layout and Secure Boot flow before using another

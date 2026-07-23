@@ -34,7 +34,7 @@ cleanup_hardware_tmp() {
 }
 trap cleanup_hardware_tmp EXIT
 nixos-generate-config --show-hardware-config >"$hardware_tmp"
-if [[ ! -s "$hardware_tmp" ]]; then
+if [[ ! -s $hardware_tmp ]]; then
   echo "Generated hardware configuration is empty; keeping the existing file." >&2
   exit 1
 fi
