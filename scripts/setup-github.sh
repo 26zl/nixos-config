@@ -3,6 +3,12 @@
 #   bash scripts/setup-github.sh
 set -euo pipefail
 
+# gh stores credentials per user and opens the user's browser — sudo breaks both
+if [ "$EUID" -eq 0 ]; then
+  echo "ERROR: run without sudo, as your normal user." >&2
+  exit 1
+fi
+
 if gh auth status >/dev/null 2>&1; then
   echo "==> Already logged in to GitHub:"
   gh auth status
