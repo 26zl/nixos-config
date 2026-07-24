@@ -136,6 +136,13 @@ in
   zramSwap.enable = true;
   services.earlyoom.enable = true; # kill runaway processes before the system freezes
 
+  boot.kernel.sysctl = {
+    # zram is RAM-fast, not rotational: read one page at a time, no readahead.
+    "vm.page-cluster" = 0;
+    # 128 instances is low once editors, watchers and direnv are all running.
+    "fs.inotify.max_user_instances" = 512;
+  };
+
   # Containers & VMs
   virtualisation.docker.enable = true;
   virtualisation.podman = {

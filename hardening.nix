@@ -50,6 +50,8 @@
     "kernel.kptr_restrict" = 2;
     "kernel.sysrq" = 4; # magic SysRq: keyboard-control functions only
     "fs.suid_dumpable" = 0;
+    # TTY line disciplines are a recurring local-privesc surface; never autoload.
+    "dev.tty.ldisc_autoload" = 0;
 
     # ptrace/eBPF/perf restricted to root — gdb attach-by-pid, bpftrace and perf
     # need sudo now; relax the matching line if that gets in the way.
@@ -79,6 +81,8 @@
     "net.ipv4.conf.default.send_redirects" = 0;
     "net.ipv6.conf.all.accept_redirects" = 0;
     "net.ipv6.conf.default.accept_redirects" = 0;
+    "net.ipv4.conf.all.log_martians" = 1;
+    "net.ipv4.conf.default.log_martians" = 1;
 
     # IPv6 privacy (temporary) addresses.
     "net.ipv6.conf.all.use_tempaddr" = 2;
