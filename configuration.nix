@@ -143,6 +143,13 @@ in
     "fs.inotify.max_user_instances" = 512;
   };
 
+  # Keep the journal persistent (it is the record when debugging boots) but
+  # bounded — the default ceiling is min(10% of the filesystem, 4G).
+  services.journald.extraConfig = ''
+    SystemMaxUse=1G
+    SystemMaxFileSize=128M
+  '';
+
   # Containers & VMs
   virtualisation.docker.enable = true;
   virtualisation.podman = {
