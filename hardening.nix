@@ -108,5 +108,10 @@
 
   environment.systemPackages = with pkgs; [
     lynis # audit on demand: sudo lynis audit system
+    # Closure-aware CVE scanner. On NixOS this replaces the file-integrity and
+    # package-audit tooling a classic distro needs: the store is read-only and
+    # content-addressed, so the open question is not "was a binary altered" but
+    # "does anything I have installed carry a known CVE".
+    vulnix # scan the running system: vulnix --system
   ];
 }

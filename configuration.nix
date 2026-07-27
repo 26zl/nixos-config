@@ -161,8 +161,16 @@ in
 
   # Security
   security.sudo.execWheelOnly = true;
+  # AppArmor's LSM is active so that packages shipping their own profile are
+  # confined; NixOS loads no profile set of its own, because the stock upstream
+  # profiles match Debian-style paths rather than /nix/store.
   security.apparmor.enable = true;
-  security.auditd.enable = true; # kernel audit daemon; no custom detection rules
+  # auditd is deliberately off. With an empty rule set it records nothing
+  # actionable while still running a highly privileged daemon, and it keeps the
+  # kernel audit subsystem on the boot line. Turn it on together with
+  # `security.audit.enable` and a real `security.audit.rules` if you need a
+  # trail; a daemon nobody reads is not a control.
+  security.auditd.enable = false;
   services.clamav.updater.enable = true; # keep on-demand scanner definitions current: clamscan / clamdscan
 
   # Mesh + on-demand VPN alongside Mullvad.
