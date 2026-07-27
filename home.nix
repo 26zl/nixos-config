@@ -1,6 +1,15 @@
 { ... }:
 let
-  wp = ./wallpaper/nixos.png;
+  # Copy the image into the store as a standalone path instead of referring to
+  # it inside the flake source tree. plasma-manager stringifies this path into a
+  # generated script, and `toString` on a source-tree path records no store
+  # dependency — so garbage collection removed the flake source and the desktop
+  # fell back to the default wallpaper. A standalone path is a real dependency
+  # of the generation, and its hash only changes when the image itself does.
+  wp = builtins.path {
+    path = ./wallpaper/nixos.png;
+    name = "nixos-wallpaper.png";
+  };
 in
 {
   home.username = "lenti";

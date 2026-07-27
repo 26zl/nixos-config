@@ -69,6 +69,8 @@ grep -Fq 'ssh_only = false' "$repo/dotfiles/starship.toml" ||
 if grep -Fq '"Containments/1/Wallpaper' "$repo/home.nix"; then
   fail "Home Manager writes a fragile Plasma containment ID"
 fi
+grep -Fq 'name = "nixos-wallpaper.png";' "$repo/home.nix" ||
+  fail "the wallpaper is referenced inside the flake source and dies on garbage collection"
 grep -Fq '"net.ipv6.conf.default.use_tempaddr" = lib.mkForce 2;' "$repo/hardening.nix" ||
   fail "new interfaces do not inherit IPv6 privacy addressing"
 grep -Fq 'sudo bash scripts/bootstrap.sh' "$repo/README.md" ||
