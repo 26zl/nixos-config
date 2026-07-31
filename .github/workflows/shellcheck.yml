@@ -9,10 +9,16 @@ on:
 permissions:
   contents: read
 
+# Superseded runs on the same ref are pointless once a newer commit exists.
+concurrency:
+  group: "shellcheck-${{ github.ref }}"
+  cancel-in-progress: true
+
 jobs:
   shellcheck:
     name: Lint shell scripts
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4

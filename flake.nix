@@ -94,6 +94,11 @@
       checks.${system} = {
         formatting = treefmtEval.config.build.check self;
         pre-commit = preCommit;
+        # Evaluation accepts a configuration whose packages cannot be built --
+        # a broken derivation in nixpkgs only surfaces when something actually
+        # realises the closure. Exposing the system here makes `nix flake check`
+        # and CI build it, so a rebuild is never the first thing to find out.
+        toplevel = self.nixosConfigurations.nixos.config.system.build.toplevel;
       };
 
       # `nix develop` (or direnv) installs the pre-commit hooks.

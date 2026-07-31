@@ -9,10 +9,16 @@ on:
 permissions:
   contents: read
 
+# Superseded runs on the same ref are pointless once a newer commit exists.
+concurrency:
+  group: "validate-flake-${{ github.ref }}"
+  cancel-in-progress: true
+
 jobs:
-  eval:
-    name: Evaluate NixOS configuration
+  quality:
+    name: Repository checks
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -28,10 +34,41 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
-      - name: Run flake checks
-        run: nix flake check --print-build-logs
+      # Named explicitly rather than run through `nix flake check`, which would
+      # also realise the system closure and pull the slow job's work in here.
+      - name: Check formatting and pre-commit hooks
+        run: |
+          nix build --print-build-logs --no-link \
+            .#checks.x86_64-linux.formatting \
+            .#checks.x86_64-linux.pre-commit
 
-      # Evaluation catches renamed options/packages and syntax errors without
-      # building or downloading the closure.
-      - name: Evaluate system closure
-        run: nix eval --raw .#nixosConfigurations.nixos.config.system.build.toplevel.drvPath
+  build:
+    name: Build system closure
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      # A full Plasma closure does not fit alongside the runner's preinstalled
+      # toolchains, and running out of space looks like an unrelated failure.
+      - name: Free disk space
+        run: |
+          set -euo pipefail
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /usr/local/share/boost /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force >/dev/null 2>&1 || true
+          df -h /
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@630ae543ea3a38a9a4166f03376c02c50f408342 # v31.11.0
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      # Evaluation alone accepts a configuration that cannot be built. This is
+      # the step that fails when a package in the locked nixpkgs is broken.
+      - name: Build the system closure
+        run: nix build --print-build-logs --no-link .#checks.x86_64-linux.toplevel

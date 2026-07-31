@@ -22,6 +22,37 @@ in
     ./secureboot.nix
   ];
 
+  # Invariants that must survive every later edit. Assertions read the merged,
+  # post-mkForce value of an option, so unlike a grep over the source they also
+  # catch a setting some other module quietly overrides — and they run on every
+  # rebuild, not only in CI.
+  assertions = [
+    {
+      assertion = config.system.stateVersion == "26.05";
+      message = ''
+        system.stateVersion pins state-migration behaviour to the release this
+        machine was installed from. It is not a version to keep current: raising
+        it silently changes how existing service state is handled.
+      '';
+    }
+    {
+      assertion = config.boot.lanzaboote.enable && !config.boot.loader.systemd-boot.enable;
+      message = ''
+        Secure Boot needs lanzaboote to own the ESP while the stock systemd-boot
+        module stays forced off. With the plain loader installed alongside it,
+        an unsigned entry is bootable and verification is decorative.
+      '';
+    }
+    {
+      assertion = config.networking.firewall.enable;
+      message = "The host firewall must stay on; this laptop joins untrusted networks.";
+    }
+    {
+      assertion = config.security.sudo.wheelNeedsPassword;
+      message = "sudo must keep prompting for a password; passwordless wheel erases the login boundary.";
+    }
+  ];
+
   # Nix
   nix.settings = {
     experimental-features = [

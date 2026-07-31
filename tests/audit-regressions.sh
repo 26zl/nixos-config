@@ -16,8 +16,17 @@ done
 for workflow in check.yml secret-scan.yml shellcheck.yml; do
   grep -Fq 'branches: ["**"]' "$repo/.github/workflows/$workflow" ||
     fail "$workflow does not cover branch names containing slashes"
+  grep -Fq 'cancel-in-progress: true' "$repo/.github/workflows/$workflow" ||
+    fail "$workflow keeps running after a newer commit supersedes it"
+done
+
+for workflow in check.yml secret-scan.yml shellcheck.yml update-flake-lock.yml; do
   grep -Fq 'persist-credentials: false' "$repo/.github/workflows/$workflow" ||
     fail "$workflow persists the checkout credential"
+  grep -Eq '^[[:space:]]+concurrency:|^concurrency:' "$repo/.github/workflows/$workflow" ||
+    fail "$workflow does not serialise its runs"
+  grep -Eq '^[[:space:]]+timeout-minutes:' "$repo/.github/workflows/$workflow" ||
+    fail "$workflow can hang for the runner's six-hour default"
 done
 
 if grep -Eq '^[[:space:]]+paths:' "$repo/.github/workflows/shellcheck.yml"; then
@@ -26,8 +35,34 @@ fi
 
 grep -Fq 'bash tests/audit-regressions.sh' "$repo/.github/workflows/check.yml" ||
   fail "CI does not run the regression tests"
-grep -Fq 'nix flake check --print-build-logs' "$repo/.github/workflows/check.yml" ||
-  fail "CI does not run flake checks"
+expected_toplevel='toplevel = self.nixosConfigurations.nixos.config.system.build.toplevel;'
+grep -Fq "$expected_toplevel" "$repo/flake.nix" ||
+  fail "the system closure is not exposed as a flake check"
+grep -Fq '.#checks.x86_64-linux.toplevel' "$repo/.github/workflows/check.yml" ||
+  fail "CI only evaluates the configuration and never builds it"
+grep -Fq '.#checks.x86_64-linux.formatting' "$repo/.github/workflows/check.yml" ||
+  fail "CI does not run the formatting check"
+grep -Fq '.#checks.x86_64-linux.pre-commit' "$repo/.github/workflows/check.yml" ||
+  fail "CI does not run the pre-commit checks"
+
+# The lock-file update is only trustworthy if the closure is realised before the
+# pull request exists; a pull request opened first would carry no evidence.
+lock_workflow="$repo/.github/workflows/update-flake-lock.yml"
+build_line="$(grep -n '#checks.x86_64-linux.toplevel' "$lock_workflow" | head -n 1 | cut -d: -f1 || true)"
+pr_line="$(grep -n 'peter-evans/create-pull-request' "$lock_workflow" | head -n 1 | cut -d: -f1 || true)"
+if [[ -z $build_line || -z $pr_line || $build_line -ge $pr_line ]]; then
+  fail "the flake update opens a pull request without first building the closure"
+fi
+
+for invariant in \
+  'config.system.stateVersion == "26.05"' \
+  'config.boot.lanzaboote.enable && !config.boot.loader.systemd-boot.enable' \
+  'config.networking.firewall.enable' \
+  'config.security.sudo.wheelNeedsPassword'; do
+  grep -Fq "assertion = $invariant;" "$repo/configuration.nix" ||
+    fail "the system no longer asserts: $invariant"
+done
+
 expected_precommit='pre-commit = preCommit;'
 grep -Fq "$expected_precommit" "$repo/flake.nix" ||
   fail "the pre-commit checks are not exposed through nix flake check"
