@@ -1,7 +1,18 @@
 # ❄️ NixOS Config — ThinkPad T14 Gen 3 · KDE Plasma 6
 
+[![Validate flake](https://github.com/26zl/nixos-config/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/26zl/nixos-config/actions/workflows/check.yml)
+[![Secret Scan](https://github.com/26zl/nixos-config/actions/workflows/secret-scan.yml/badge.svg?branch=main)](https://github.com/26zl/nixos-config/actions/workflows/secret-scan.yml)
+[![ShellCheck](https://github.com/26zl/nixos-config/actions/workflows/shellcheck.yml/badge.svg?branch=main)](https://github.com/26zl/nixos-config/actions/workflows/shellcheck.yml)
+[![NixOS unstable](https://img.shields.io/badge/NixOS-unstable-5277C3?logo=nixos&logoColor=white)](https://nixos.org)
+[![Secure Boot: lanzaboote](https://img.shields.io/badge/Secure%20Boot-lanzaboote-4c8b2b)](https://github.com/nix-community/lanzaboote)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
+
 A flake-pinned NixOS configuration for a Lenovo ThinkPad T14 Gen 3 (Intel,
 dual-boot with Windows), hardened for daily use and designed to be forked.
+
+The `Validate flake` badge is the meaningful one: it builds the full system
+closure on a runner rather than only evaluating it, so it goes red when a
+package in the locked nixpkgs cannot be built.
 
 ## Highlights
 
