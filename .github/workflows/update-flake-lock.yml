@@ -22,9 +22,9 @@ concurrency:
 
 jobs:
   update:
-    name: Update inputs and verify the closure builds
+    name: Update inputs and verify the closures build
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 300
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
@@ -62,12 +62,18 @@ jobs:
       # Deliberately not a failing step: while an input is broken upstream this
       # runs every week, and a standing red cross trains you to ignore it. The
       # outcome is reported instead, and the pull request is what carries signal.
-      - name: Build the system closure
+      - name: Build the system closure of every example host
         id: build
         if: steps.update.outputs.changed == 'true'
         run: |
           set -uo pipefail
-          if nix build --print-build-logs --no-link .#checks.x86_64-linux.toplevel; then
+          built=true
+          for f in examples/*.nix; do
+            name=$(basename "$f" .nix)
+            [ "$name" = hardware-configuration ] && continue
+            nix build --print-build-logs --no-link ".#checks.x86_64-linux.example-$name" || built=false
+          done
+          if [ "$built" = true ]; then
             echo "built=true" >> "$GITHUB_OUTPUT"
           else
             echo "built=false" >> "$GITHUB_OUTPUT"

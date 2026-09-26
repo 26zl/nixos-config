@@ -2,7 +2,7 @@
 # NixOS hardening framework (daily/workstation profile) and ryan4yin's config; see
 # README credits. Tuned to not break KDE, Docker, libvirt or dev tooling.
 #
-# Deliberately excluded as too invasive for this machine: impermanence,
+# Deliberately excluded as too invasive for a daily driver: impermanence,
 # TPM-backed measured boot, hardened malloc, auditd rule sets, SMT/USB lockdown.
 
 {
@@ -24,7 +24,7 @@
     "vsyscall=none"
   ];
 
-  # Protocols and buses this laptop never uses; firewire is DMA-capable.
+  # Protocols and buses a workstation never uses; firewire is DMA-capable.
   boot.blacklistedKernelModules = [
     "dccp"
     "sctp"

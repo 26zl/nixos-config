@@ -1,4 +1,4 @@
-# ❄️ NixOS Config — ThinkPad T14 Gen 3 · KDE Plasma 6
+# ❄️ NixOS Config — KDE Plasma 6, one host file per machine
 
 [![Validate flake](https://github.com/26zl/nixos-config/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/26zl/nixos-config/actions/workflows/check.yml)
 [![Secret Scan](https://github.com/26zl/nixos-config/actions/workflows/secret-scan.yml/badge.svg?branch=main)](https://github.com/26zl/nixos-config/actions/workflows/secret-scan.yml)
@@ -7,17 +7,26 @@
 [![Secure Boot: lanzaboote](https://img.shields.io/badge/Secure%20Boot-lanzaboote-4c8b2b)](https://github.com/nix-community/lanzaboote)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 
-A flake-pinned NixOS configuration for a Lenovo ThinkPad T14 Gen 3 (Intel,
-dual-boot with Windows), hardened for daily use and designed to be forked.
+A flake-pinned NixOS configuration for a KDE Plasma 6 workstation, hardened
+for daily use, that runs on any x86_64 machine. Everything that differs
+between machines — the account, CPU and GPU vendors, laptop or desktop,
+Windows next to it, locale — lives in one file per host under `hosts/`, and
+`scripts/bootstrap.sh` writes that file from what it detects on a fresh
+install. Host directories are git-ignored: they describe one real machine
+and stay on it, so the repository itself carries no account names, disk IDs
+or locations.
 
-The `Validate flake` badge is the meaningful one: it builds the full system
-closure on a runner rather than only evaluating it, so it goes red when a
-package in the locked nixpkgs cannot be built.
+The `Validate flake` badge is the meaningful one: CI builds the full system
+closure of every host file under `examples/` — an AMD desktop with NVIDIA, an
+Intel laptop with NVIDIA PRIME offload, an all-AMD laptop and a Pascal-era
+desktop on the legacy driver — rather than only evaluating them, so it goes
+red when a package in the locked nixpkgs cannot be built.
 
 ## Highlights
 
-- **Desktop:** KDE Plasma 6 (Wayland) + SDDM, PipeWire, Norwegian locale/keyboard,
-  Plasma browser integration for Chrome and Firefox, KDE Connect, fingerprint login
+- **Desktop:** KDE Plasma 6 (Wayland) + SDDM, PipeWire, Plasma browser
+  integration for Chrome and Firefox, KDE Connect, fingerprint login where
+  there is a reader; locale and keyboard from the host file
 - **Look:** Nord (arctic blue-grey) — `nordic` Plasma/Kvantum/GTK theme, Nordzy icons
   & cursor; kitty, starship and fastfetch all themed to match
 - **Terminal:** kitty running fish (login shell stays bash for KDE stability), starship
@@ -28,11 +37,13 @@ package in the locked nixpkgs cannot be built.
 - **Containers & VMs:** Docker, Podman, libvirt + virt-manager
 - **System engineering:** kubectl/k9s/helm/kubectx, OpenTofu, lazydocker/dive, sops+age,
   Ansible
-- **Security tooling:** Wireshark, nmap, tcpdump, Burp Suite, Lynis, ClamAV, auditd
-  (kernel audit daemon; no custom rules), KeePassXC; Mullvad + Tailscale + WireGuard
+- **Security tooling:** Wireshark, nmap, tcpdump, Burp Suite, Lynis, ClamAV,
+  KeePassXC; Mullvad + Tailscale + WireGuard
 - **Apps:** Chrome, Discord, VLC/mpv, LibreOffice, Thunderbird, EasyEffects
-- **Laptop:** power-profiles-daemon, Intel VAAPI hardware video acceleration, fwupd
-  (firmware/BIOS updates), zram swap
+- **Hardware** (`hardware.nix`, from the host file): Intel, AMD or NVIDIA
+  graphics with hardware video decoding, PRIME offload on hybrid laptops, the
+  legacy NVIDIA branch for Maxwell–Volta cards, CPU microcode, `amd_pstate`,
+  power-profiles-daemon, fwupd (firmware/BIOS updates), zram swap
 - **Security & privacy** (`hardening.nix`): kernel/boot hardening, Madaidan-aligned
   sysctls, kernel-module blacklist, locked root account, disabled core dumps,
   Wi-Fi MAC privacy, encrypted DNS (opportunistic DNS-over-TLS with Quad9 fallback),
@@ -40,72 +51,124 @@ package in the locked nixpkgs cannot be built.
   Docker, VMs or dev tooling
 - **Declarative dotfiles + KDE:** Home Manager manages the shell/terminal dotfiles,
   and plasma-manager applies the Nord global theme automatically (no System Settings clicks)
-- **Dual-boot friendly:** systemd-boot (auto-detects Windows), local-time RTC
+- **Dual-boot friendly:** systemd-boot auto-detects Windows; the RTC follows
+  Windows' local time when `windowsDualBoot` is set
 
 ## Layout
 
-| Path                         | Purpose                                                                                                 |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `flake.nix` / `flake.lock`   | Flake entry point; pins nixpkgs (unstable)                                                              |
-| `configuration.nix`          | Main system configuration                                                                               |
-| `hardening.nix`              | Security & privacy hardening (imported by `configuration.nix`)                                          |
-| `hardware-configuration.nix` | Machine-specific (disks/drivers) — regenerate on other hardware                                         |
-| `dotfiles/`                  | `bashrc`, `config.fish`, `kitty.conf`, `starship.toml`, `fastfetch.jsonc`, `direnvrc` (all Nord-themed) |
-| `scripts/bootstrap.sh`       | Fresh-install setup: generate hardware profile, first build                                             |
-| `scripts/apply.sh`           | Deploy to `/etc/nixos`, validate, rebuild                                                               |
-| `scripts/setup-github.sh`    | Authenticate git + gh                                                                                   |
-| `.github/workflows/`         | CI: flake checks/evaluation, shell regression tests, ShellCheck, Gitleaks history scan                  |
+| Path                                      | Purpose                                                                                                         |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `flake.nix` / `flake.lock`                | Flake entry point; pins nixpkgs (unstable); one system per `hosts/<name>/`                                      |
+| `hosts/<name>/host.nix`                   | The machine: user, CPU, GPUs, form factor, Windows, locale, stateVersion. Git-ignored; the name is the hostname |
+| `hosts/<name>/hardware-configuration.nix` | Generated by bootstrap: disks, filesystems, kernel modules. Git-ignored                                         |
+| `lib/host.nix`                            | Defaults and validation for host files                                                                          |
+| `configuration.nix`                       | System configuration shared by every host                                                                       |
+| `hardware.nix`                            | Drivers, video decoding, PRIME, power and firmware settings derived from the host file                          |
+| `hardening.nix`                           | Security & privacy hardening (imported by `configuration.nix`)                                                  |
+| `secureboot.nix`                          | Secure Boot via lanzaboote (imported by `configuration.nix`)                                                    |
+| `examples/`                               | Host files for several kinds of machines; CI builds each of them                                                |
+| `dotfiles/`                               | `bashrc`, `config.fish`, `kitty.conf`, `starship.toml`, `fastfetch.jsonc`, `direnvrc` (all Nord-themed)         |
+| `scripts/bootstrap.sh`                    | Fresh install: detect the machine, write its host directory, first build                                        |
+| `scripts/apply.sh`                        | Deploy to `/etc/nixos`, validate, rebuild                                                                       |
+| `scripts/setup-github.sh`                 | Authenticate git + gh                                                                                           |
+| `.github/workflows/`                      | CI: flake checks, example builds, shell regression tests, ShellCheck, Gitleaks history scan                     |
 
 ## Quick start (fresh NixOS install)
 
-From a freshly installed NixOS, clone to the source path used by `programs.nh`
-and run the bootstrap script:
+Install NixOS the usual way and create your user in the installer. Then, from
+that account, clone the repo anywhere and run the bootstrap script with a name
+for the machine — it becomes the hostname:
 
 ```sh
-mkdir -p ~/Desktop
 nix --extra-experimental-features 'nix-command flakes' run nixpkgs#git -- \
-  clone https://github.com/26zl/nixos-config ~/Desktop/nixos-config
-cd ~/Desktop/nixos-config
-sudo bash scripts/bootstrap.sh
+  clone https://github.com/26zl/nixos-config ~/nixos-config
+cd ~/nixos-config
+sudo bash scripts/bootstrap.sh <host>       # e.g. sudo bash scripts/bootstrap.sh workstation
 ```
 
-The bootstrap script generates the hardware profile, creates missing Secure Boot
-signing keys from the locked flake, and switches to the new system.
+The script detects the machine and writes `hosts/<host>/host.nix`, generates
+`hosts/<host>/hardware-configuration.nix`, creates missing Secure Boot signing
+keys from the locked flake, and switches to the new system. It builds through
+a `path:` flake reference, which reads the clone as it is on disk, so the
+git-ignored host directory never needs to be tracked.
 
-> Regenerating `hardware-configuration.nix` is important: it captures **your**
-> disks, filesystems and drivers. The copy committed here belongs to the author's
-> machine and will not match yours.
+| Setting                                                            | Detected from                                                                                                               | Fallback                 |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| `user`, `userDescription`                                          | the account that ran `sudo`                                                                                                 | —                        |
+| `cpu`                                                              | `/proc/cpuinfo`                                                                                                             | —                        |
+| `gpus`, `nvidia.legacy`, `nvidia.busIds`                           | PCI display controllers by vendor and device ID                                                                             | —                        |
+| `formFactor`                                                       | SMBIOS chassis type, else a system battery                                                                                  | `desktop`                |
+| `fingerprint`                                                      | a USB device that calls itself a fingerprint reader, or fprintd already running                                             | `false`                  |
+| `windowsDualBoot`                                                  | the Windows Boot Manager on the ESP                                                                                         | `false`                  |
+| `timeZone`, `locale`, `regionalLocale`, `keyboard`, `stateVersion` | the installer's `/etc/nixos/configuration.nix`, else the host file of an earlier deployment, else `timedatectl`/`localectl` | UTC, `en_US.UTF-8`, `us` |
+
+Everything it found is printed before the build. If something is off —
+Windows on another disk, a reader the heuristic missed — edit
+`hosts/<host>/host.nix` and run the script again; it reuses an existing host
+file. When no record of the release the machine was installed from exists,
+the script asks for it: `stateVersion` must be that release, not the running
+one. Every setting and its default is listed in `lib/host.nix`.
 
 > **Secure Boot is enabled** in this config. Bootstrap creates missing signing
 > keys. To opt out, comment out the `./secureboot.nix` import before running it.
 
-## Adapt it to your machine
+## The host file
 
-Before building, change the few values that are specific to a user/host:
+A hybrid-graphics notebook, from `examples/intel-laptop-nvidia.nix`:
 
-| Where               | Change                                                                         |
-| ------------------- | ------------------------------------------------------------------------------ |
-| `home.nix`          | `home.username` / `home.homeDirectory` → your user                             |
-| `configuration.nix` | User, `trusted-users`, hostname, source path, locale, Intel VAAPI and hardware |
-| `flake.nix`         | Home Manager user and the Intel `nixos-hardware` module                        |
+```nix
+{
+  user = "bob";
+  stateVersion = "26.05"; # the release it was installed from; never raised
 
-The defaults remain specific to this ThinkPad and Intel GPU. Review the hardware
-module, graphics driver, disk layout and Secure Boot flow before using another
-machine.
+  formFactor = "laptop"; # laptop | desktop
+  cpu = "intel"; # intel | amd
+  gpus = [ "intel" "nvidia" ]; # any of intel, amd, nvidia
+  nvidia.busIds = { igpu = "PCI:0:2:0"; nvidia = "PCI:1:0:0"; };
+  fingerprint = true;
+
+  timeZone = "America/New_York";
+  keyboard = "us";
+
+  flakePath = "/home/bob/nixos-config"; # this clone, for `nh os switch`
+}
+```
+
+What the values change:
+
+- `cpu` picks the microcode and, on AMD, `amd_pstate=active`
+  (nixos-hardware's common modules, chosen in `flake.nix`).
+- `gpus` installs the drivers and hardware video decoding for each GPU. With
+  `nvidia`, the open kernel modules and the production driver are used unless
+  `nvidia.legacy = true` (Maxwell, Pascal and Volta, which the current driver
+  dropped) selects the 580 branch. A laptop with an integrated GPU next to the
+  NVIDIA one runs PRIME offload and needs `nvidia.busIds` — bootstrap fills
+  them in — so the panel stays on the iGPU and `nvidia-offload <program>`
+  runs a program on NVIDIA. Everywhere else the NVIDIA card is the display.
+- `formFactor = "laptop"` adds nixos-hardware's laptop module; power-profiles-daemon
+  runs on both.
+- `windowsDualBoot` keeps the hardware clock in local time, as Windows does.
+- `regionalLocale` sets every `LC_*` format (dates, paper, money) while
+  `locale` stays the UI language.
+
+Host directories are git-ignored (`hosts/README.md`). To version yours anyway,
+keep a private fork and add them with `git add -f hosts/<name>`. Bootstrap also
+refuses to reuse a host directory whose `user` does not exist on the machine.
 
 ## Day-to-day
 
 **Apply local edits** — after changing any file in this repo:
 
 ```sh
-sudo bash scripts/apply.sh     # copies the repo into /etc/nixos, validates, rebuilds
+sudo bash scripts/apply.sh            # copies the repo into /etc/nixos, validates, rebuilds this hostname
+sudo bash scripts/apply.sh <host>     # another host directory
+nh os switch                          # the same rebuild without the /etc/nixos mirror
 ```
 
 **Update the whole system** — refresh all flake inputs (nixpkgs, home-manager, …)
-and rebuild onto the new versions:
+and rebuild onto the new versions, from the clone:
 
 ```sh
-cd ~/Desktop/nixos-config
 nix flake update
 git diff -- flake.lock
 sudo bash scripts/apply.sh
@@ -132,8 +195,9 @@ sudo nixos-rebuild switch --rollback
 ```
 
 Generation rollback restores declarative system state only. It does not back up
-`/home`, container or VM data, or Secure Boot keys under `/var/lib/sbctl`; keep
-those in an encrypted off-device backup and test restoration separately.
+`/home`, container or VM data, the host directory, or Secure Boot keys under
+`/var/lib/sbctl`; keep those in an encrypted off-device backup and test
+restoration separately.
 
 ## Secure Boot
 
@@ -142,7 +206,7 @@ Secure Boot is **enabled** via [lanzaboote](https://github.com/nix-community/lan
 A machine without signing keys fails at bootloader install, so a fresh install must
 **create keys first** — or opt out by commenting the `./secureboot.nix` import.
 
-One-time setup (ThinkPad instructions; keeps the Windows dual-boot working):
+One-time setup (keeps a Windows dual-boot working):
 
 ```sh
 # 1. Create signing keys (written to /var/lib/sbctl)
@@ -157,9 +221,11 @@ sudo bash scripts/apply.sh
 sudo sbctl verify   # BOOTX64.EFI + generation EFIs show ✓ (bzImage / Microsoft / fallback lines are expected unsigned)
 ```
 
-3. Reboot → **Reboot into Firmware** → _Security → Secure Boot_: set **Secure
-   Boot = enabled**, then **Reset to Setup Mode**, and press **F10** to save.
-   (Do _not_ pick "Clear All Secure Boot Keys".)
+3. Reboot into the firmware setup (`systemctl reboot --firmware-setup`) and,
+   under its Secure Boot settings, enable Secure Boot and put it in **setup
+   mode** — on Lenovo firmware _Security → Secure Boot → Reset to Setup Mode_,
+   on others "clear the Platform Key" or "delete PK". Do _not_ pick "Clear All
+   Secure Boot Keys" where the two are separate options. Save and boot.
 
 4. Back in NixOS, enroll your keys together with Microsoft's (so Windows and
    signed option-ROMs still boot):
@@ -187,7 +253,7 @@ rebuild, and disable Secure Boot in the firmware. Full runbook also lives in
 
 ## Dotfiles on other systems
 
-On this NixOS host, Home Manager applies every dotfile and the **Nord** KDE look
+On a NixOS host, Home Manager applies every dotfile and the **Nord** KDE look
 declaratively. On another Linux distribution, copy the portable shell and terminal
 files:
 
@@ -206,7 +272,9 @@ portable, while the shell and Kitty files target Unix.
 
 ## Post-install notes
 
-- **Fingerprint:** enroll in System Settings → Users (Synaptics reader).
+- **Fingerprint** (hosts with `fingerprint = true`): enroll in System Settings → Users.
+- **Hybrid laptops:** the desktop runs on the integrated GPU; start a program on
+  the NVIDIA GPU with `nvidia-offload <program>`.
 - **Mullvad:** open the Mullvad VPN app and sign in with your account number.
 - **Firefox:** install the
   [Plasma Integration browser add-on](https://addons.mozilla.org/firefox/addon/plasma-integration/);
@@ -214,7 +282,7 @@ portable, while the shell and Kitty files target Unix.
 - **Flathub:** `flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo`
 - **Prompt font:** set Konsole's font to _JetBrainsMono Nerd Font_ so the starship
   theme's icons render.
-- **Battery:** set a charge limit (~80%) in System Settings → Power Management.
+- **Battery** (laptops): set a charge limit (~80%) in System Settings → Power Management.
 
 ## Credits / inspiration
 
@@ -231,13 +299,15 @@ The hardening and several structure ideas were distilled — and adapted to a
   pentesting tooling reference
 - **[mikeroyal/NixOS-Guide](https://github.com/mikeroyal/NixOS-Guide)** — general reference
 - **[26zl/fedora-44-kde-setup](https://github.com/26zl/fedora-44-kde-setup)** — starship
-  theme, shell aliases, VPN-aware resolved settings, and the CI workflow patterns
+  theme, shell aliases, VPN-aware resolved settings, hardware detection and the CI
+  workflow patterns
 
 ## Notes
 
-- `hardware-configuration.nix` contains machine identifiers such as disk UUIDs.
+- Host directories contain machine identifiers such as disk UUIDs and the
+  account name; that is why they are git-ignored.
 - No credentials, tokens or SSH keys are committed; `.gitignore` and Gitleaks
-  enforce that boundary. The public repo still reveals account and machine metadata.
+  enforce that boundary.
 - Claude Code is installed via its own self-updating native installer (runs thanks to
   `programs.nix-ld`), not as a Nix package — so it stays current independently.
 

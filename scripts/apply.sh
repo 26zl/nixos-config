@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Deploy this whole config to /etc/nixos and rebuild. Run as root:
-#   sudo bash scripts/apply.sh
+#   sudo bash scripts/apply.sh [host]      (default: this machine's hostname)
 #
 # The repo is mirrored to /etc/nixos and committed there before building.
 # Any deploy error restores the complete pre-deploy destination snapshot.
@@ -17,6 +17,17 @@ DST="/etc/nixos"
 if [[ $REPO == "/" || $REPO == "$DST" || -L $DST || ! -f "$REPO/flake.nix" ||
   ! -f "$REPO/configuration.nix" || ! -f "$REPO/.gitignore" ]]; then
   echo "Refusing to deploy from invalid source: $REPO" >&2
+  exit 1
+fi
+
+HOST="${1:-$(hostname)}"
+if [[ ! -f "$REPO/hosts/$HOST/host.nix" ]]; then
+  known=""
+  for dir in "$REPO"/hosts/*/; do
+    known+=" $(basename "$dir")"
+  done
+  echo "No hosts/$HOST/host.nix in $REPO. Hosts here:${known:- none}" >&2
+  echo "Pass the host name, or run scripts/bootstrap.sh <host> first." >&2
   exit 1
 fi
 
@@ -73,11 +84,12 @@ fi
 echo "==> Mirroring repo -> $DST"
 deploy_mutated=true
 mkdir -p "$DST"
-rsync -a --delete --chown=root:root --exclude=".git" \
+# the host directories are git-ignored but belong in the mirror
+rsync -a --delete --chown=root:root --exclude=".git" --include="/hosts/***" \
   --exclude-from="$REPO/.gitignore" "$REPO/" "$DST/"
 
 [ -d "$DST/.git" ] || gitx init -q -b main
-gitx add -A
+gitx add -A -f
 if gitx diff --cached --quiet; then
   echo "==> No changes to commit"
 else
@@ -85,10 +97,10 @@ else
 fi
 
 echo "==> Validating (dry-build; nothing is applied yet)"
-nixos-rebuild dry-build --flake "$DST#nixos"
+nixos-rebuild dry-build --flake "path:$DST#$HOST"
 
 echo "==> Switching"
-nixos-rebuild switch --flake "$DST#nixos"
+nixos-rebuild switch --flake "path:$DST#$HOST"
 
 deploy_succeeded=true
 echo "==> Done — /etc/nixos committed and clean. Reboot if kernel params changed."
