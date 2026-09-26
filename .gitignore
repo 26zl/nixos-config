@@ -1,3 +1,8 @@
+# Host directories describe one real machine (account, disk UUIDs, locale) and
+# stay on that machine; see hosts/README.md
+hosts/*
+!hosts/README.md
+
 # Never commit secrets / credentials
 *.key
 *.pem

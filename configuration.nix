@@ -1,9 +1,16 @@
-# NixOS system configuration for host "nixos" (ThinkPad T14 Gen 3, KDE Plasma 6).
+# NixOS system configuration shared by every host (KDE Plasma 6 on Wayland).
+# What differs between machines comes from hosts/<name>/host.nix (`host`
+# below); hardware.nix turns those values into driver and power settings.
 #
-# Rebuild:   sudo nixos-rebuild switch --flake /etc/nixos#nixos
+# Rebuild:   sudo bash scripts/apply.sh          (or nixos-rebuild switch --flake /etc/nixos#<host>)
 # Rollback:  sudo nixos-rebuild switch --rollback   (or pick an older generation at boot)
 
-{ config, pkgs, ... }:
+{
+  config,
+  pkgs,
+  host,
+  ...
+}:
 let
   # Breeze SDDM login theme with our wallpaper as the background.
   sddmTheme = pkgs.runCommandLocal "sddm-breeze-nixos" { } ''
@@ -16,7 +23,7 @@ let
 in
 {
   imports = [
-    ./hardware-configuration.nix
+    ./hardware.nix
     ./hardening.nix
     # Secure Boot (lanzaboote) — active. Runbook in secureboot.nix / README.
     ./secureboot.nix
@@ -28,14 +35,6 @@ in
   # rebuild, not only in CI.
   assertions = [
     {
-      assertion = config.system.stateVersion == "26.05";
-      message = ''
-        system.stateVersion pins state-migration behaviour to the release this
-        machine was installed from. It is not a version to keep current: raising
-        it silently changes how existing service state is handled.
-      '';
-    }
-    {
       assertion = config.boot.lanzaboote.enable && !config.boot.loader.systemd-boot.enable;
       message = ''
         Secure Boot needs lanzaboote to own the ESP while the stock systemd-boot
@@ -45,7 +44,7 @@ in
     }
     {
       assertion = config.networking.firewall.enable;
-      message = "The host firewall must stay on; this laptop joins untrusted networks.";
+      message = "The host firewall must stay on; these machines join untrusted networks.";
     }
     {
       assertion = config.security.sudo.wheelNeedsPassword;
@@ -62,7 +61,7 @@ in
     auto-optimise-store = true;
     trusted-users = [
       "root"
-      "lenti"
+      host.user
     ];
     # Keep dev-shell dependencies alive across garbage collection (nix-direnv).
     keep-outputs = true;
@@ -79,9 +78,10 @@ in
   };
 
   # nh: nicer nixos-rebuild/home-manager with build tree + generation diffs (`nh os switch`).
+  # The path: reference reads the clone as it is on disk, git-ignored host directory included.
   programs.nh = {
     enable = true;
-    flake = "/home/lenti/Desktop/nixos-config";
+    flake = "path:${host.flakePath}";
   };
   # comma: run any package once without installing it (`, <cmd>`), using a prebuilt index.
   programs.nix-index.enable = true;
@@ -96,26 +96,28 @@ in
   boot.loader.timeout = 5;
   boot.tmp.cleanOnBoot = true;
 
-  # Networking
-  networking.hostName = "nixos";
+  # Networking (the hostname is the hosts/<name> directory, set in flake.nix)
   networking.networkmanager.enable = true;
   networking.firewall.enable = true;
 
-  # Time & locale. Windows keeps the hardware clock in local time, so match it.
-  time.timeZone = "Europe/Oslo";
-  time.hardwareClockInLocalTime = true;
-  i18n.defaultLocale = "en_US.UTF-8";
-  i18n.extraLocaleSettings = {
-    LC_ADDRESS = "nb_NO.UTF-8";
-    LC_IDENTIFICATION = "nb_NO.UTF-8";
-    LC_MEASUREMENT = "nb_NO.UTF-8";
-    LC_MONETARY = "nb_NO.UTF-8";
-    LC_NAME = "nb_NO.UTF-8";
-    LC_NUMERIC = "nb_NO.UTF-8";
-    LC_PAPER = "nb_NO.UTF-8";
-    LC_TELEPHONE = "nb_NO.UTF-8";
-    LC_TIME = "nb_NO.UTF-8";
-  };
+  # Time & locale
+  time.timeZone = host.timeZone;
+  i18n.defaultLocale = host.locale;
+  i18n.extraLocaleSettings =
+    if host.regionalLocale == null then
+      { }
+    else
+      {
+        LC_ADDRESS = host.regionalLocale;
+        LC_IDENTIFICATION = host.regionalLocale;
+        LC_MEASUREMENT = host.regionalLocale;
+        LC_MONETARY = host.regionalLocale;
+        LC_NAME = host.regionalLocale;
+        LC_NUMERIC = host.regionalLocale;
+        LC_PAPER = host.regionalLocale;
+        LC_TELEPHONE = host.regionalLocale;
+        LC_TIME = host.regionalLocale;
+      };
 
   # Desktop: KDE Plasma 6 on Wayland
   services.xserver.enable = true;
@@ -124,10 +126,10 @@ in
   services.displayManager.sddm.theme = "breeze-nixos"; # our wallpaper on the login screen
   services.desktopManager.plasma6.enable = true;
   services.xserver.xkb = {
-    layout = "no";
+    layout = host.keyboard;
     variant = "";
   };
-  console.keyMap = "no";
+  console.keyMap = host.keyboard;
   programs.dconf.enable = true;
   programs.kdeconnect.enable = true; # opens its own firewall ports
   programs.fish.enable = true; # completions/vendor setup; used as kitty's shell, not login
@@ -142,26 +144,8 @@ in
     pulse.enable = true;
   };
 
-  # Laptop power & thermals. power-profiles-daemon drives the ThinkPad firmware
-  # profiles (DYTC); thermald is deliberately absent — it refuses to run on this
-  # platform. Battery charge limit lives in System Settings > Power Management.
-  services.power-profiles-daemon.enable = true;
-  powerManagement.enable = true;
-  services.irqbalance.enable = true;
-
-  # Intel GPU hardware video acceleration (VAAPI).
-  hardware.graphics = {
-    enable = true;
-    extraPackages = with pkgs; [ intel-media-driver ];
-  };
-  environment.sessionVariables.LIBVA_DRIVER_NAME = "iHD";
-
-  # Hardware & maintenance
+  # Hardware & maintenance (drivers, power and firmware updates live in hardware.nix)
   services.printing.enable = true;
-  services.fstrim.enable = true;
-  services.fwupd.enable = true; # firmware/BIOS updates: fwupdmgr refresh && fwupdmgr update
-  services.fprintd.enable = true; # Synaptics reader; enroll in System Settings > Users
-  hardware.enableRedistributableFirmware = true;
   hardware.bluetooth.enable = true;
   hardware.bluetooth.powerOnBoot = true;
   zramSwap.enable = true;
@@ -290,9 +274,9 @@ in
   ];
 
   # Users
-  users.users.lenti = {
+  users.users.${host.user} = {
     isNormalUser = true;
-    description = "LZ";
+    description = host.userDescription;
     extraGroups = [
       "networkmanager"
       "wheel"
@@ -318,7 +302,7 @@ in
     p7zip
 
     # Editors
-    neovim # latest (0.12.x); user config is cloned from the 26zl/nvim repo
+    neovim # latest (0.12.x); the user config is not managed here
     vscode-fhs # FHS build so extensions that ship binaries work
 
     # Everyday apps
@@ -477,6 +461,6 @@ in
     vulkan-tools
   ];
 
-  # Release compatibility marker — never change after install.
-  system.stateVersion = "26.05";
+  # Release compatibility marker, per host — never change after install.
+  system.stateVersion = host.stateVersion;
 }

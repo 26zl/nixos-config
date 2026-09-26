@@ -1,4 +1,4 @@
-{ ... }:
+{ host, ... }:
 let
   # Copy the image into the store as a standalone path instead of referring to
   # it inside the flake source tree. plasma-manager stringifies this path into a
@@ -12,9 +12,9 @@ let
   };
 in
 {
-  home.username = "lenti";
-  home.homeDirectory = "/home/lenti";
-  home.stateVersion = "26.05";
+  home.username = host.user;
+  home.homeDirectory = "/home/${host.user}";
+  home.stateVersion = host.stateVersion;
 
   # Dotfiles from this repo, managed declaratively (edit in dotfiles/, rebuild).
   home.file = {

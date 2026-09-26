@@ -19,6 +19,8 @@ jobs:
     name: Repository checks
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      examples: ${{ steps.examples.outputs.names }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
@@ -28,6 +30,18 @@ jobs:
       - name: Run shell regression tests
         run: bash tests/audit-regressions.sh
 
+      # The example host files stand in for real machines, which are never
+      # committed; the build job below gets one matrix entry per file.
+      - name: List the example hosts
+        id: examples
+        run: |
+          set -euo pipefail
+          names=$(for f in examples/*.nix; do
+            name=$(basename "$f" .nix)
+            [ "$name" = hardware-configuration ] || echo "$name"
+          done | jq -R . | jq -sc .)
+          echo "names=$names" >> "$GITHUB_OUTPUT"
+
       - name: Install Nix
         uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
         with:
@@ -35,17 +49,24 @@ jobs:
             experimental-features = nix-command flakes
 
       # Named explicitly rather than run through `nix flake check`, which would
-      # also realise the system closure and pull the slow job's work in here.
-      - name: Check formatting and pre-commit hooks
+      # also realise the system closures and pull the slow job's work in here.
+      # example-hosts evaluates every example host without building it.
+      - name: Check formatting, pre-commit hooks and the example hosts
         run: |
           nix build --print-build-logs --no-link \
             .#checks.x86_64-linux.formatting \
-            .#checks.x86_64-linux.pre-commit
+            .#checks.x86_64-linux.pre-commit \
+            .#checks.x86_64-linux.example-hosts
 
   build:
-    name: Build system closure
+    name: Build ${{ matrix.host }}
+    needs: quality
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        host: ${{ fromJSON(needs.quality.outputs.examples) }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
@@ -69,6 +90,7 @@ jobs:
             experimental-features = nix-command flakes
 
       # Evaluation alone accepts a configuration that cannot be built. This is
-      # the step that fails when a package in the locked nixpkgs is broken.
+      # the step that fails when a package in the locked nixpkgs is broken;
+      # the NVIDIA examples also compile the kernel modules, which no cache has.
       - name: Build the system closure
-        run: nix build --print-build-logs --no-link .#checks.x86_64-linux.toplevel
+        run: nix build --print-build-logs --no-link ".#checks.x86_64-linux.example-${{ matrix.host }}"
