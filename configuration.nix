@@ -29,10 +29,8 @@ in
     ./secureboot.nix
   ];
 
-  # Invariants that must survive every later edit. Assertions read the merged,
-  # post-mkForce value of an option, so unlike a grep over the source they also
-  # catch a setting some other module quietly overrides — and they run on every
-  # rebuild, not only in CI.
+  # Invariants that must survive every later edit. Assertions see the merged,
+  # post-mkForce value, so they also catch a module quietly overriding a setting.
   assertions = [
     {
       assertion = config.boot.lanzaboote.enable && !config.boot.loader.systemd-boot.enable;
@@ -160,10 +158,10 @@ in
 
   # Keep the journal persistent (it is the record when debugging boots) but
   # bounded — the default ceiling is min(10% of the filesystem, 4G).
-  services.journald.extraConfig = ''
-    SystemMaxUse=1G
-    SystemMaxFileSize=128M
-  '';
+  services.journald.settings.Journal = {
+    SystemMaxUse = "1G";
+    SystemMaxFileSize = "128M";
+  };
 
   # Containers & VMs
   virtualisation.docker.enable = true;
@@ -180,11 +178,8 @@ in
   # confined; NixOS loads no profile set of its own, because the stock upstream
   # profiles match Debian-style paths rather than /nix/store.
   security.apparmor.enable = true;
-  # auditd is deliberately off. With an empty rule set it records nothing
-  # actionable while still running a highly privileged daemon, and it keeps the
-  # kernel audit subsystem on the boot line. Turn it on together with
-  # `security.audit.enable` and a real `security.audit.rules` if you need a
-  # trail; a daemon nobody reads is not a control.
+  # auditd stays off: with no rule set it records nothing actionable while running
+  # a privileged daemon. Enable it together with security.audit.rules if a trail is needed.
   security.auditd.enable = false;
   services.clamav.updater.enable = true; # keep on-demand scanner definitions current: clamscan / clamdscan
 
@@ -219,9 +214,7 @@ in
   };
 
   # Plasma browser integration for Chrome: native-messaging manifest plus a managed
-  # policy that auto-installs the "Plasma Integration" extension. Chrome shows
-  # "Managed by your organization" because of the policy; drop the policy block to
-  # install the extension manually instead.
+  # policy that auto-installs the extension (hence "Managed by your organization").
   environment.etc."opt/chrome/native-messaging-hosts/org.kde.plasma.browser_integration.json".source =
     "${pkgs.kdePackages.plasma-browser-integration}/etc/opt/chrome/native-messaging-hosts/org.kde.plasma.browser_integration.json";
   environment.etc."opt/chrome/policies/managed/plasma-browser-integration.json".text =
@@ -302,7 +295,7 @@ in
     p7zip
 
     # Editors
-    neovim # latest (0.12.x); the user config is not managed here
+    neovim # the user config is not managed here
     vscode-fhs # FHS build so extensions that ship binaries work
 
     # Everyday apps

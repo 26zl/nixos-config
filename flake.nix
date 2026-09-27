@@ -15,7 +15,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.home-manager.follows = "home-manager";
     };
-    nixos-hardware.url = "github:NixOS/nixos-hardware";
+    nixos-hardware = {
+      url = "github:NixOS/nixos-hardware";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nix-index-database = {
       url = "github:nix-community/nix-index-database";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -30,7 +33,7 @@
     };
     # Secure Boot is enabled by the secureboot.nix import in configuration.nix.
     lanzaboote = {
-      url = "github:nix-community/lanzaboote/v1.1.0";
+      url = "github:nix-community/lanzaboote/v1.2.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -94,8 +97,7 @@
             hardwareConfiguration
             { networking.hostName = name; }
             nix-index-database.nixosModules.nix-index
-            # Provides the boot.lanzaboote options; inert until ./secureboot.nix
-            # sets enable = true (default is off, so this changes nothing on its own).
+            # Provides the boot.lanzaboote options; ./secureboot.nix turns them on.
             lanzaboote.nixosModules.lanzaboote
             home-manager.nixosModules.home-manager
             {
@@ -148,7 +150,7 @@
       preCommit = git-hooks.lib.${system}.run {
         src = ./.;
         hooks = {
-          nixfmt-rfc-style = {
+          nixfmt = {
             enable = true;
             package = pkgs.nixfmt;
           };
@@ -160,7 +162,7 @@
     {
       nixosConfigurations = hosts;
 
-      # `nix fmt` formats every file (nix/lua/shell/md/yaml/json).
+      # `nix fmt` formats every file (nix/shell/md/yaml/json).
       formatter.${system} = treefmtEval.config.build.wrapper;
       packages.${system}.sbctl = pkgs.sbctl;
       checks.${system} = {
@@ -177,10 +179,8 @@
           ) exampleNames
         );
       }
-      # Evaluation accepts a configuration whose packages cannot be built --
-      # a broken derivation in nixpkgs only surfaces when something actually
-      # realises the closure. CI builds every example system, so a rebuild on
-      # a real machine is never the first thing to find out.
+      # Evaluation accepts a configuration whose packages cannot be built, so
+      # CI realises every example closure; a real machine is never the first to try.
       // lib.mapAttrs' (
         name: cfg: lib.nameValuePair "example-${name}" cfg.config.system.build.toplevel
       ) examples

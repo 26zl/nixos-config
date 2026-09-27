@@ -99,19 +99,16 @@
   networking.networkmanager.wifi.scanRandMacAddress = true;
   networking.networkmanager.dns = "systemd-resolved";
 
-  # Mullvad VPN (daemon + GUI). Sign in with the account number; the app manages
-  # its own DNS and kill switch while connected.
+  # Mullvad VPN daemon plus the desktop app. Sign in with the account number; the
+  # app manages its own DNS and kill switch while connected.
   services.mullvad-vpn = {
     enable = true;
-    package = pkgs.mullvad-vpn;
+    gui.enable = true;
   };
 
   environment.systemPackages = with pkgs; [
     lynis # audit on demand: sudo lynis audit system
-    # Closure-aware CVE scanner. On NixOS this replaces the file-integrity and
-    # package-audit tooling a classic distro needs: the store is read-only and
-    # content-addressed, so the open question is not "was a binary altered" but
-    # "does anything I have installed carry a known CVE".
+    # Closure-aware CVE scanner; the read-only store makes integrity checkers moot.
     vulnix # scan the running system: vulnix --system
   ];
 }
