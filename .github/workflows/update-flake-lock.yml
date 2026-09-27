@@ -1,11 +1,10 @@
 name: Update flake.lock
 
-# Updating the lock file by hand means discovering a broken package in nixpkgs
-# only after a local rebuild has already failed, and then restoring the old lock
-# with `git checkout flake.lock`. This job does the same work on a runner: it
-# updates the inputs, builds the system closure, and opens a pull request only
-# when that build succeeds. A pull request appearing is therefore the signal
-# that the update is safe to pull down; silence means nixpkgs is still broken.
+# Updates the inputs on a runner, builds every example system closure from
+# them, and opens a pull request only when the builds succeed. A pull request
+# is the signal that the update is safe to pull down; silence means a package
+# in nixpkgs is broken, and a red run means this configuration itself no
+# longer evaluates against the new inputs.
 
 on:
   schedule:
@@ -23,11 +22,11 @@ concurrency:
 jobs:
   update:
     name: Update inputs and verify the closures build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 300
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -58,6 +57,12 @@ jobs:
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+
+      # An evaluation error is this configuration's own problem, never a
+      # transient upstream one, so it fails the run instead of being held back.
+      - name: Evaluate every example host
+        if: steps.update.outputs.changed == 'true'
+        run: nix build --print-build-logs --no-link .#checks.x86_64-linux.example-hosts
 
       # Deliberately not a failing step: while an input is broken upstream this
       # runs every week, and a standing red cross trains you to ignore it. The

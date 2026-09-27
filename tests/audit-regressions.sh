@@ -113,7 +113,7 @@ expected_hardware_move='mv -- "$hardware_tmp" "$host_dir/hardware-configuration.
 grep -Fq "$expected_hardware_move" \
   "$repo/scripts/bootstrap.sh" ||
   fail "bootstrap does not replace hardware configuration atomically"
-grep -Fq 'flakePath = "$REPO";' "$repo/scripts/bootstrap.sh" ||
+grep -Fq 'flakePath = $(nix_string "$REPO");' "$repo/scripts/bootstrap.sh" ||
   fail "bootstrap does not record the clone path for programs.nh"
 grep -Fq -- '--flake "path:${REPO}#${HOST}"' "$repo/scripts/bootstrap.sh" ||
   fail "bootstrap builds through git, which cannot see the ignored host directory"
