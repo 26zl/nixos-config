@@ -42,7 +42,7 @@ fi
 host_dir="$REPO/hosts/$HOST"
 FLAKES=(--option extra-experimental-features 'nix-command flakes')
 
-# --- detection ---------------------------------------------------------------
+# Detection
 
 # "<vendor> <device> <slot>" per display controller, lowercase hex.
 pci_gpus() {
@@ -92,6 +92,15 @@ nix_setting() { # name file...
   local name="$1"
   shift
   sed -n "s/^[[:space:]]*${name}[[:space:]]*=[[:space:]]*\"\([^\"]*\)\".*/\1/p" "$@" 2>/dev/null | head -n 1
+}
+
+# A double-quoted Nix string literal: backslashes, quotes and ${ escaped.
+nix_string() {
+  local s=$1
+  s=${s//\\/\\\\}
+  s=${s//\"/\\\"}
+  s=${s//\$\{/\\\$\{}
+  printf '"%s"' "$s"
 }
 
 detect_host() {
@@ -187,12 +196,12 @@ detect_host() {
 # lib/host.nix lists the defaults and checks the values. The directory name is
 # the hostname and the flake output (nixosConfigurations.$HOST).
 {
-  user = "$user";
-  userDescription = "$description";
+  user = $(nix_string "$user");
+  userDescription = $(nix_string "$description");
 
   # The release this machine was installed from. Never raise it: it pins how
   # existing service state is migrated, not which packages are installed.
-  stateVersion = "$state_version";
+  stateVersion = $(nix_string "$state_version");
 
   formFactor = "$form_factor"; # laptop | desktop
   cpu = "$cpu"; # intel | amd
@@ -218,20 +227,20 @@ EOF
 
   # Locale. regionalLocale sets the LC_* formats (dates, paper, money) while
   # \`locale\` stays the UI language; null keeps everything in \`locale\`.
-  timeZone = "$time_zone";
-  locale = "$locale";
-  regionalLocale = ${regional:+\"$regional\"}${regional:-null};
-  keyboard = "$keyboard"; # console keymap and X11 layout
+  timeZone = $(nix_string "$time_zone");
+  locale = $(nix_string "$locale");
+  regionalLocale = $(if [[ -n $regional ]]; then nix_string "$regional"; else echo null; fi);
+  keyboard = $(nix_string "$keyboard"); # console keymap and X11 layout
 
   # This clone, for \`nh os switch\`.
-  flakePath = "$REPO";
+  flakePath = $(nix_string "$REPO");
 }
 EOF
   } >"$host_dir/host.nix"
   echo "==> Wrote hosts/$HOST/host.nix — review it before the first build if anything above looks off"
 }
 
-# --- host directory -----------------------------------------------------------
+# Host directory
 
 if [[ -f $host_dir/host.nix ]]; then
   existing_user=$(sed -n 's/^[[:space:]]*user = "\([^"]*\)";.*/\1/p' "$host_dir/host.nix" | head -n 1)

@@ -90,7 +90,7 @@ grep -Fq 'flake = "path:${host.flakePath}";' "$repo/configuration.nix" ||
 expected_precommit='pre-commit = preCommit;'
 grep -Fq "$expected_precommit" "$repo/flake.nix" ||
   fail "the pre-commit checks are not exposed through nix flake check"
-grep -Fq '9991e0b2903da4c8f6122b5c3186448b927a5da4deef1fe45271c3793f4ee29c' \
+grep -Fq '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb' \
   "$repo/.github/workflows/secret-scan.yml" ||
   fail "the Gitleaks archive checksum is not pinned"
 grep -Fq 'fetch-depth: 0' "$repo/.github/workflows/secret-scan.yml" ||
