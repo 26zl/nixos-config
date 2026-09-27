@@ -13,8 +13,8 @@ between machines — the account, CPU and GPU vendors, laptop or desktop,
 Windows next to it, locale — lives in one file per host under `hosts/`, and
 `scripts/bootstrap.sh` writes that file from what it detects on a fresh
 install. Host directories are git-ignored: they describe one real machine
-and stay on it, so the repository itself carries no account names, disk IDs
-or locations.
+and stay on it, so the tracked tree carries no account names, disk IDs or
+locations.
 
 The `Validate flake` badge is the meaningful one: CI builds the full system
 closure of every host file under `examples/` — an AMD desktop with NVIDIA, an

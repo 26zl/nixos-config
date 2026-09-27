@@ -56,10 +56,8 @@ in
     };
   };
 
-  # Power. power-profiles-daemon backs KDE's power modes on both form factors
-  # and drives laptop firmware profiles; nixos-hardware's laptop module skips
-  # TLP while it is on. thermald is left out: it refuses to run on some Intel
-  # platforms, and a failed unit at every boot is worse than no daemon.
+  # power-profiles-daemon backs KDE's power modes; nixos-hardware skips TLP while
+  # it is on. thermald is left out: it refuses to run on some Intel platforms.
   services.power-profiles-daemon.enable = true;
   powerManagement.enable = true;
   services.irqbalance.enable = true;
