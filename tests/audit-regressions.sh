@@ -76,7 +76,8 @@ if [[ -z $build_line || -z $pr_line || $build_line -ge $pr_line ]]; then
 fi
 
 for invariant in \
-  'config.boot.lanzaboote.enable && !config.boot.loader.systemd-boot.enable' \
+  'config.boot.lanzaboote.enable == host.secureBoot' \
+  '!host.secureBoot || !config.boot.loader.systemd-boot.enable' \
   'config.networking.firewall.enable' \
   'config.security.sudo.wheelNeedsPassword'; do
   grep -Fq "assertion = $invariant;" "$repo/configuration.nix" ||
@@ -84,8 +85,8 @@ for invariant in \
 done
 grep -Fq 'system.stateVersion = host.stateVersion;' "$repo/configuration.nix" ||
   fail "stateVersion is no longer taken from the host file"
-grep -Fq 'flake = "path:${host.flakePath}";' "$repo/configuration.nix" ||
-  fail "nh reads the clone through git and would not see the ignored host directory"
+grep -Fq 'flake = "path:/etc/nixos";' "$repo/configuration.nix" ||
+  fail "nh builds from the raw clone (a path: flake copies the whole worktree, secrets and all, into the store)"
 
 expected_precommit='pre-commit = preCommit;'
 grep -Fq "$expected_precommit" "$repo/flake.nix" ||
@@ -115,8 +116,11 @@ grep -Fq "$expected_hardware_move" \
   fail "bootstrap does not replace hardware configuration atomically"
 grep -Fq 'flakePath = $(nix_string "$REPO");' "$repo/scripts/bootstrap.sh" ||
   fail "bootstrap does not record the clone path for programs.nh"
-grep -Fq -- '--flake "path:${REPO}#${HOST}"' "$repo/scripts/bootstrap.sh" ||
-  fail "bootstrap builds through git, which cannot see the ignored host directory"
+grep -Fq '"$REPO/scripts/apply.sh" "$HOST"' "$repo/scripts/bootstrap.sh" ||
+  fail "bootstrap does not route the build through apply.sh"
+if grep -Fq -- '--flake "path:${REPO}' "$repo/scripts/bootstrap.sh"; then
+  fail "bootstrap still builds the raw clone through a path: flake, copying secrets into the store"
+fi
 if grep -Eq 'git .*add' "$repo/scripts/bootstrap.sh"; then
   fail "bootstrap stages the host directory, which would put a real machine into the public repository"
 fi

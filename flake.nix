@@ -31,7 +31,7 @@
       url = "github:cachix/git-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # Secure Boot is enabled by the secureboot.nix import in configuration.nix.
+    # Secure Boot: configuration.nix imports secureboot.nix when host.secureBoot.
     lanzaboote = {
       url = "github:nix-community/lanzaboote/v1.2.0";
       inputs.nixpkgs.follows = "nixpkgs";

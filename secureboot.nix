@@ -1,6 +1,7 @@
 # Secure Boot via lanzaboote (github:nix-community/lanzaboote).
-# This module is active by default; signing keys must exist before the first
-# rebuild. See the README for enrollment, verification and opt-out steps.
+# Imported by configuration.nix when host.secureBoot is true (the default);
+# signing keys must exist before the first rebuild. See the README for
+# enrollment, verification and opt-out (secureBoot = false) steps.
 { lib, pkgs, ... }:
 {
   environment.systemPackages = [ pkgs.sbctl ]; # inspect/verify Secure Boot
