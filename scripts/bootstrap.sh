@@ -9,9 +9,9 @@
 # hosts/<host>/ directory holding host.nix, filled in from what this script
 # detects (account, CPU, GPUs, form factor, Windows, locale), and the
 # generated hardware-configuration.nix. hosts/ is git-ignored: the directory
-# stays on this machine, and the build reads it through a path: flake
-# reference, which does not need it tracked. Review host.nix before the first
-# build when the detection prints anything doubtful.
+# stays on this machine, and the build goes through scripts/apply.sh, which
+# mirrors it into /etc/nixos (secrets excluded) without it being tracked.
+# Review host.nix before the first build when the detection prints anything doubtful.
 set -euo pipefail
 
 die() {
@@ -270,16 +270,20 @@ trap - EXIT
 chown -R --reference="$REPO" "$host_dir"
 
 # Secure Boot (secureboot.nix) signs the boot chain, so signing keys must exist
-# before the first build. Harmless if you later comment out the import to opt out.
+# before the first build. Harmless if the host sets secureBoot = false to opt out.
 if [[ ! -d /var/lib/sbctl/keys ]]; then
   echo "==> Creating Secure Boot signing keys (/var/lib/sbctl)"
   nix "${FLAKES[@]}" shell "${REPO}#sbctl" -c sbctl create-keys
 fi
 
-# path: reads the working tree as it is, so the git-ignored host directory is
-# seen without being tracked.
-echo "==> Building and switching to the new system"
-nixos-rebuild switch --flake "path:${REPO}#${HOST}" "${FLAKES[@]}"
+# Build through apply.sh, which mirrors the repo to /etc/nixos excluding .git and
+# everything .gitignore lists (the host directory is re-included) and builds from
+# there. A direct path: flake of the clone would instead copy the whole working
+# tree, secrets included, into the world-readable /nix/store. NIX_CONFIG enables
+# flakes for apply.sh's rebuild on a fresh install that has not switched yet.
+echo "==> Building and switching via scripts/apply.sh"
+NIX_CONFIG="extra-experimental-features = nix-command flakes" \
+  bash "$REPO/scripts/apply.sh" "$HOST"
 
 echo "==> Done. Reboot to land on the new generation cleanly."
 echo "    Secure Boot: finish enrollment in the firmware — see README 'Secure Boot'."

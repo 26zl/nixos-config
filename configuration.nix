@@ -8,6 +8,7 @@
 {
   config,
   pkgs,
+  lib,
   host,
   ...
 }:
@@ -25,17 +26,26 @@ in
   imports = [
     ./hardware.nix
     ./hardening.nix
-    # Secure Boot (lanzaboote) — active. Runbook in secureboot.nix / README.
-    ./secureboot.nix
-  ];
+  ]
+  # Secure Boot (lanzaboote); on by default, opt out per host with
+  # `secureBoot = false`. Runbook in secureboot.nix / README.
+  ++ lib.optional host.secureBoot ./secureboot.nix;
 
   # Invariants that must survive every later edit. Assertions see the merged,
   # post-mkForce value, so they also catch a module quietly overriding a setting.
   assertions = [
     {
-      assertion = config.boot.lanzaboote.enable && !config.boot.loader.systemd-boot.enable;
+      assertion = config.boot.lanzaboote.enable == host.secureBoot;
       message = ''
-        Secure Boot needs lanzaboote to own the ESP while the stock systemd-boot
+        Secure Boot (lanzaboote) must match host.secureBoot: on when it is true,
+        off when it is false. configuration.nix imports secureboot.nix through
+        lib.optional host.secureBoot, so flipping host.secureBoot flips both.
+      '';
+    }
+    {
+      assertion = !host.secureBoot || !config.boot.loader.systemd-boot.enable;
+      message = ''
+        With Secure Boot on, lanzaboote owns the ESP while the stock systemd-boot
         module stays forced off. With the plain loader installed alongside it,
         an unsigned entry is bootable and verification is decorative.
       '';
@@ -57,10 +67,10 @@ in
       "flakes"
     ];
     auto-optimise-store = true;
-    trusted-users = [
-      "root"
-      host.user
-    ];
+    # Only root is trusted: a trusted user can set substituters and sign-off
+    # settings that amount to passwordless root, which would contradict the
+    # sudo-password assertion below.
+    trusted-users = [ "root" ];
     # Keep dev-shell dependencies alive across garbage collection (nix-direnv).
     keep-outputs = true;
     keep-derivations = true;
@@ -76,10 +86,13 @@ in
   };
 
   # nh: nicer nixos-rebuild/home-manager with build tree + generation diffs (`nh os switch`).
-  # The path: reference reads the clone as it is on disk, git-ignored host directory included.
+  # Points at the /etc/nixos mirror that apply.sh writes (.git and the gitignored
+  # secrets excluded, the host directory kept), not the raw clone: a path: flake of
+  # the clone copies the whole worktree into the world-readable /nix/store. Run
+  # scripts/apply.sh to refresh the mirror before `nh os switch`.
   programs.nh = {
     enable = true;
-    flake = "path:${host.flakePath}";
+    flake = "path:/etc/nixos";
   };
   # comma: run any package once without installing it (`, <cmd>`), using a prebuilt index.
   programs.nix-index.enable = true;
@@ -129,7 +142,11 @@ in
   };
   console.keyMap = host.keyboard;
   programs.dconf.enable = true;
-  programs.kdeconnect.enable = true; # opens its own firewall ports
+  # Opens TCP/UDP 1714-1764 on all interfaces (the module has no per-interface
+  # switch). Acceptable here: the firewall is otherwise default-deny and these
+  # ports matter only on trusted LANs. Scope them per host with
+  # networking.firewall.interfaces.<iface> if a machine joins hostile networks.
+  programs.kdeconnect.enable = true;
   programs.fish.enable = true; # completions/vendor setup; used as kitty's shell, not login
 
   # Audio: PipeWire
@@ -164,7 +181,17 @@ in
   };
 
   # Containers & VMs
-  virtualisation.docker.enable = true;
+  virtualisation.docker = {
+    enable = true;
+    # Rootless so the user drives Docker without the root-equivalent docker group.
+    rootless = {
+      enable = true;
+      setSocketVariable = true;
+    };
+    # Published ports bind to loopback unless a container names an address, so
+    # `-p 8080:80` does not expose the container past the firewall on every interface.
+    daemon.settings.ip = "127.0.0.1";
+  };
   virtualisation.podman = {
     enable = true;
     dockerCompat = false; # docker itself provides the `docker` command
@@ -273,7 +300,6 @@ in
     extraGroups = [
       "networkmanager"
       "wheel"
-      "docker" # note: docker group is root-equivalent
       "libvirtd"
       "wireshark"
     ];

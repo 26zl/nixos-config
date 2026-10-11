@@ -88,9 +88,10 @@ sudo bash scripts/bootstrap.sh <host>       # e.g. sudo bash scripts/bootstrap.s
 
 The script detects the machine and writes `hosts/<host>/host.nix`, generates
 `hosts/<host>/hardware-configuration.nix`, creates missing Secure Boot signing
-keys from the locked flake, and switches to the new system. It builds through
-a `path:` flake reference, which reads the clone as it is on disk, so the
-git-ignored host directory never needs to be tracked.
+keys from the locked flake, and switches to the new system through
+`scripts/apply.sh`, which mirrors the repo into `/etc/nixos` — excluding `.git`
+and the git-ignored secrets, keeping the host directory — and builds from there,
+so the working tree is never copied wholesale into the store.
 
 | Setting                                                            | Detected from                                                                                                               | Fallback                 |
 | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
@@ -109,8 +110,8 @@ file. When no record of the release the machine was installed from exists,
 the script asks for it: `stateVersion` must be that release, not the running
 one. Every setting and its default is listed in `lib/host.nix`.
 
-> **Secure Boot is enabled** in this config. Bootstrap creates missing signing
-> keys. To opt out, comment out the `./secureboot.nix` import before running it.
+> **Secure Boot is enabled** by default. Bootstrap creates missing signing
+> keys. To opt out, set `secureBoot = false;` in the host file before running it.
 
 ## The host file
 
@@ -130,7 +131,7 @@ A hybrid-graphics notebook, from `examples/intel-laptop-nvidia.nix`:
   timeZone = "America/New_York";
   keyboard = "us";
 
-  flakePath = "/home/bob/nixos-config"; # this clone, for `nh os switch`
+  flakePath = "/home/bob/nixos-config"; # where this clone lives (recorded by bootstrap)
 }
 ```
 
@@ -162,7 +163,7 @@ refuses to reuse a host directory whose `user` does not exist on the machine.
 ```sh
 sudo bash scripts/apply.sh            # copies the repo into /etc/nixos, validates, rebuilds this hostname
 sudo bash scripts/apply.sh <host>     # another host directory
-nh os switch                          # the same rebuild without the /etc/nixos mirror
+nh os switch                          # rebuild from the /etc/nixos mirror (run apply.sh first to refresh it)
 ```
 
 **Update the whole system** — refresh all flake inputs (nixpkgs, home-manager, …)
@@ -201,10 +202,11 @@ restoration separately.
 
 ## Secure Boot
 
-Secure Boot is **enabled** via [lanzaboote](https://github.com/nix-community/lanzaboote):
-`configuration.nix` imports `./secureboot.nix`, which signs the whole boot chain.
-A machine without signing keys fails at bootloader install, so a fresh install must
-**create keys first** — or opt out by commenting the `./secureboot.nix` import.
+Secure Boot is **enabled by default** via [lanzaboote](https://github.com/nix-community/lanzaboote):
+`configuration.nix` imports `./secureboot.nix` when `host.secureBoot` is true, and it
+signs the whole boot chain. A machine without signing keys fails at bootloader install,
+so a fresh install must **create keys first** — or opt out with `secureBoot = false;`
+in the host file.
 
 One-time setup (keeps a Windows dual-boot working):
 
@@ -214,7 +216,7 @@ sudo nix --extra-experimental-features 'nix-command flakes' \
   shell .#sbctl -c sbctl create-keys
 ```
 
-2. Build (the `./secureboot.nix` import is already active) and confirm signing:
+2. Build (Secure Boot is active by default) and confirm signing:
 
 ```sh
 sudo bash scripts/apply.sh
@@ -247,9 +249,8 @@ sudo sbctl enroll-keys --microsoft
 bootctl status      # Secure Boot: enabled (user)
 ```
 
-To opt out entirely: comment the `./secureboot.nix` import in `configuration.nix`,
-rebuild, and disable Secure Boot in the firmware. Full runbook also lives in
-`secureboot.nix`.
+To opt out entirely: set `secureBoot = false;` in the host file, rebuild, and
+disable Secure Boot in the firmware. Full runbook also lives in `secureboot.nix`.
 
 ## Dotfiles on other systems
 

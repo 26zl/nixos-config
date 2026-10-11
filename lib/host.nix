@@ -18,6 +18,8 @@ let
     };
     fingerprint = false;
     windowsDualBoot = false;
+    # Secure Boot via lanzaboote; set false to opt a host out (see secureboot.nix).
+    secureBoot = true;
     timeZone = "Etc/UTC";
     locale = "en_US.UTF-8";
     regionalLocale = null;
@@ -58,6 +60,10 @@ let
     {
       ok = host.cpu == "amd" || host.cpu == "intel";
       message = "cpu must be amd or intel";
+    }
+    {
+      ok = lib.isBool host.secureBoot;
+      message = "secureBoot must be true or false";
     }
     {
       ok = badGpus == [ ];
