@@ -12,8 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 concurrency:
   group: "update-flake-lock"
@@ -24,6 +23,9 @@ jobs:
     name: Update inputs and verify the closures build
     runs-on: ubuntu-24.04
     timeout-minutes: 300
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
